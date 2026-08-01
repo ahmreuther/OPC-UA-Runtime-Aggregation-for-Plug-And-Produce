@@ -1,0 +1,253 @@
+{
+  "schema_version": 2,
+  "recorded_at": "2026-07-31",
+  "scope": "Direct XML children of opcua_agg_server/nodesets/",
+  "purpose": "File-level integrity and provenance record for the runtime NodeSet dependency set",
+  "project_snapshot": {
+    "commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+    "path": "opcua_agg_server/nodesets/",
+    "verification": "Every listed release XML is byte-identical to the file at this clean original-project commit."
+  },
+  "license_evidence": "Every listed XML contains an embedded OPC Foundation MIT License 1.00 notice.",
+  "provenance_note": "Exact official commits are retained where the original manifest recorded them. A null upstream commit is intentional: either only the configured UA-Nodeset ref or only an original-project snapshot was retained. Model version and publication date are embedded metadata and are not treated as commit evidence.",
+  "files": [
+    {
+      "file": "Opc.Ua.AdditiveManufacturing.Nodeset2.xml",
+      "model_uri": "http://opcfoundation.org/UA/AdditiveManufacturing/",
+      "model_version": "1.0.0",
+      "publication_date": "2025-02-01T00:00:00Z",
+      "sha256": "f1e7c5ffa608286a29f58a953bda6e9e6c118de1837fd03b20cb1dd6da35a8e8",
+      "provenance_status": "recorded_official_ref_unpinned",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "v1.04",
+        "commit": null,
+        "path": "AdditiveManufacturing/Opc.Ua.AdditiveManufacturing.Nodeset2.xml",
+        "evidence": [
+          "opcua_agg_server/nodesets/nodeset_version.json",
+          "opcua_agg_server/src/server_discovery/companion_specs.rs"
+        ]
+      }
+    },
+    {
+      "file": "Opc.Ua.Di.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/DI/",
+      "model_version": "1.04.0",
+      "publication_date": "2022-11-03T00:00:00Z",
+      "sha256": "bf33d67176136bb035227a8585c7fe2fe551b8273defab129678ce977b5d3a8e",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "DI-1.04.0-2022-11-03",
+        "commit": "08d08a88647c8f874be7dfaf931bde856723ef7f",
+        "path": "DI/Opc.Ua.Di.NodeSet2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.IA.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/IA/",
+      "model_version": "1.01.2",
+      "publication_date": "2024-02-28T00:00:00Z",
+      "sha256": "a47f0f361a4a398141b97d6af9d5de8d4175f15d37968f42c92d02c5e6a5fa94",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "IA-1.01.2-2024-02-28",
+        "commit": "2a625ffcd8f04f3890af4d7d7df4a136155a1bec",
+        "path": "IA/Opc.Ua.IA.NodeSet2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.IRDI.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/Dictionary/IRDI",
+      "model_version": "1.00",
+      "publication_date": "2020-02-04T00:00:00Z",
+      "sha256": "6c5e5ed0032f0b1626d6e3de304c2cd61181ec1880311f9de90a4a57ce89c992",
+      "provenance_status": "repository_snapshot_only",
+      "source": {
+        "kind": "repository_local",
+        "project_commit": "89ce7552760d0f8e800bacfc6468a73325f78cee",
+        "path": "open62541/deps/ua-nodeset/PADIM/Opc.Ua.IRDI.NodeSet2.xml",
+        "upstream_commit": null
+      }
+    },
+    {
+      "file": "opc.ua.isa95-jobcontrol.nodeset2.xml",
+      "model_uri": "http://opcfoundation.org/UA/ISA95-JOBCONTROL",
+      "model_version": "1.0.0",
+      "publication_date": "2021-03-31T00:00:00Z",
+      "sha256": "bf0f6f81ed5402e33e9ba10810bff070813c61b0c193cc2bedd5822826a1b0e5",
+      "provenance_status": "repository_snapshot_only",
+      "source": {
+        "kind": "repository_local",
+        "project_commit": "89ce7552760d0f8e800bacfc6468a73325f78cee",
+        "path": "open62541/deps/ua-nodeset/ISA95-JOBCONTROL/opc.ua.isa95-jobcontrol.nodeset2.xml",
+        "upstream_commit": null
+      }
+    },
+    {
+      "file": "Opc.Ua.ISA95-JobControl-V2.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/",
+      "model_version": "2.0.0",
+      "publication_date": "2024-01-31T00:00:00Z",
+      "sha256": "578c2776ed690921a610b2fdd010b7d2f9ec0068990054764fb1f6490449cd3f",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "latest",
+        "commit": "b877ed8aa3d42f981d5e8744469acefcfc68cddc",
+        "path": "ISA95-JOBCONTROL/opc.ua.isa95-jobcontrol.nodeset2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.Machinery.Jobs.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/Machinery/Jobs/",
+      "model_version": "1.0.1",
+      "publication_date": "2024-05-01T00:00:00Z",
+      "sha256": "18446562010be3fe96c3244b18ef2ef15a59de52e2598cff05e46ca3bb513a5c",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "latest",
+        "commit": "b877ed8aa3d42f981d5e8744469acefcfc68cddc",
+        "path": "Machinery/Jobs/Opc.Ua.Machinery.Jobs.Nodeset2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.Machinery.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/Machinery/",
+      "model_version": "1.03.0",
+      "publication_date": "2023-08-01T00:00:00Z",
+      "sha256": "9b78b8119dd2eccaa2e1e00185d98b8cbbf6d61f6755ceef67612c96bfccd933",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "Machinery-1.03.0-2023-08-01",
+        "commit": "d1bb6a22125bd7cd986272b1ee98a18a91d76fff",
+        "path": "Machinery/Opc.Ua.Machinery.NodeSet2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.Machinery.ProcessValues.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/Machinery/ProcessValues/",
+      "model_version": "1.00.0",
+      "publication_date": "2023-05-01T00:00:00Z",
+      "sha256": "c2c5a177ffc84971ab3af35189039c8d6c7df1ccc39e07c08d126edb73569503",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "latest",
+        "commit": "b877ed8aa3d42f981d5e8744469acefcfc68cddc",
+        "path": "Machinery/ProcessValues/Opc.Ua.Machinery.ProcessValues.NodeSet2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.MachineTool.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/MachineTool/",
+      "model_version": "1.02.0",
+      "publication_date": "2024-11-01T00:00:00Z",
+      "sha256": "9d84e9cd967a4a48eaaed079e1af263d967cc6e6c8656623326272c0fe0a5264",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "MachineTool-1.2.0-2024-11-01",
+        "commit": "3cb33cebbf5feff4432f9174ed3acdd8c81909b8",
+        "path": "MachineTool/Opc.Ua.MachineTool.NodeSet2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.MachineVision.AMCM.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/MachineVision/AMCM/",
+      "model_version": "1.00.0",
+      "publication_date": "2024-05-17T00:00:00Z",
+      "sha256": "a23c7e957f569e9fdb41fa99e6006c8ba3e8dc72a7a96eb7ee7e3169cc7c80b2",
+      "provenance_status": "repository_snapshot_only",
+      "source": {
+        "kind": "repository_local",
+        "project_commit": "89ce7552760d0f8e800bacfc6468a73325f78cee",
+        "path": "nodesets/Opc.Ua.MachineVision.AMCM.NodeSet2.xml",
+        "upstream_commit": null
+      }
+    },
+    {
+      "file": "Opc.Ua.MachineVision.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/MachineVision",
+      "model_version": "1.0.0",
+      "publication_date": "2019-07-11T10:18:27Z",
+      "sha256": "3e67454155a9618e0981aa8b3ee248f7a9ee216f9f915b53eb26a69533c0cc62",
+      "provenance_status": "recorded_official_ref_unpinned",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "v1.04",
+        "commit": null,
+        "path": "MachineVision/Opc.Ua.MachineVision.NodeSet2.xml",
+        "evidence": [
+          "opcua_agg_server/nodesets/nodeset_version.json",
+          "opcua_agg_server/src/server_discovery/companion_specs.rs"
+        ]
+      }
+    },
+    {
+      "file": "Opc.Ua.PADIM.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/PADIM/",
+      "model_version": "1.0.3",
+      "publication_date": "2022-06-27T00:00:00Z",
+      "sha256": "b6a9b15cc6ea5fe1fc2c40be02649a147a0af583f2cd7d2063c7eb97a1e48934",
+      "provenance_status": "pinned_official_commit",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "PADIM-1.0.3-2022-06-27",
+        "commit": "397bd996e951225cf83df52affad6aed742d415d",
+        "path": "PADIM/Opc.Ua.PADIM.NodeSet2.xml"
+      }
+    },
+    {
+      "file": "Opc.Ua.Robotics.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/Robotics/",
+      "model_version": "1.01.2",
+      "publication_date": "2021-05-20T00:00:00Z",
+      "sha256": "227282f1c5602257e73bebb668386b88986d11867ec7fad180559062a4384eb8",
+      "provenance_status": "recorded_official_ref_unpinned",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "v1.04",
+        "commit": null,
+        "path": "Robotics/Opc.Ua.Robotics.NodeSet2.xml",
+        "evidence": [
+          "opcua_agg_server/nodesets/nodeset_version.json",
+          "opcua_agg_server/src/server_discovery/companion_specs.rs"
+        ]
+      }
+    },
+    {
+      "file": "Opc.Ua.Woodworking.NodeSet2.xml",
+      "model_uri": "http://opcfoundation.org/UA/Woodworking/",
+      "model_version": "1.02.0",
+      "publication_date": "2025-06-01T01:02:00Z",
+      "sha256": "4695214ed215d7e6704fcb1cbc00002bf3ddb0ec309cf0821ca5d7d3526d9f5d",
+      "provenance_status": "recorded_official_ref_unpinned",
+      "source": {
+        "kind": "official_git",
+        "repository": "https://github.com/OPCFoundation/UA-Nodeset.git",
+        "ref": "v1.04",
+        "commit": null,
+        "path": "Woodworking/Opc.Ua.Woodworking.NodeSet2.xml",
+        "evidence": [
+          "opcua_agg_server/nodesets/nodeset_version.json",
+          "opcua_agg_server/src/server_discovery/companion_specs.rs"
+        ]
+      }
+    }
+  ]
+}

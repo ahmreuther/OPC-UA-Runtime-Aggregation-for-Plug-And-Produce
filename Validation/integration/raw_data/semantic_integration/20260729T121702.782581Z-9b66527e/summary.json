@@ -1,0 +1,828 @@
+{
+    "schema":  "ojies.public-e01-summary/v1",
+    "timestamp":  "2026-07-29T12:21:42.882397Z",
+    "source_count":  16,
+    "source_namespace_count":  16,
+    "entry_points":  {
+                         "namespace_count":  16,
+                         "total_entry_points":  56
+                     },
+    "nodeset_mapping":  {
+                            "mapping_count":  15,
+                            "unique_nodeset_files":  [
+                                                         "Opc.Ua.AdditiveManufacturing.Nodeset2.xml",
+                                                         "Opc.Ua.Di.NodeSet2.xml",
+                                                         "Opc.Ua.IA.NodeSet2.xml",
+                                                         "Opc.Ua.IRDI.NodeSet2.xml",
+                                                         "Opc.Ua.ISA95-JobControl-V2.NodeSet2.xml",
+                                                         "Opc.Ua.MachineTool.NodeSet2.xml",
+                                                         "Opc.Ua.MachineVision.AMCM.NodeSet2.xml",
+                                                         "Opc.Ua.MachineVision.NodeSet2.xml",
+                                                         "Opc.Ua.Machinery.Jobs.NodeSet2.xml",
+                                                         "Opc.Ua.Machinery.NodeSet2.xml",
+                                                         "Opc.Ua.Machinery.ProcessValues.NodeSet2.xml",
+                                                         "Opc.Ua.PADIM.NodeSet2.xml",
+                                                         "Opc.Ua.Robotics.NodeSet2.xml",
+                                                         "Opc.Ua.Woodworking.NodeSet2.xml",
+                                                         "opc.ua.isa95-jobcontrol.nodeset2.xml"
+                                                     ]
+                        },
+    "rules":  {
+                  "count":  2756,
+                  "unique_source_paths":  2740,
+                  "unique_target_paths":  398,
+                  "is_forward_true":  2756,
+                  "is_forward_false":  0,
+                  "ref_type_leaf_distribution":  {
+                                                     "i=35":  2756
+                                                 },
+                  "max_source_path_depth":  10,
+                  "max_target_path_depth":  9,
+                  "executor_rule_count":  2756,
+                  "executor_projection_schema":  "qualified_source_bound_v1",
+                  "executor_projection_matches_rich_rules":  true
+              },
+    "aggregation_results":  {
+                                "event_count":  32,
+                                "source_count":  16,
+                                "accepted_count":  16,
+                                "completed_count":  16,
+                                "failed_count":  0,
+                                "pending_count":  0
+                            },
+    "address_space":  {
+                          "xml_path":  "address_space.xml",
+                          "total_node_count":  21931,
+                          "node_count_by_type":  {
+                                                     "UAObject":  3210,
+                                                     "UAVariable":  16306,
+                                                     "UAMethod":  1304,
+                                                     "UAObjectType":  481,
+                                                     "UAVariableType":  83,
+                                                     "UADataType":  486,
+                                                     "UAReferenceType":  61
+                                                 },
+                          "namespace_count_in_xml":  119
+                      },
+    "validation_run":  {
+                           "run_id":  "20260729T121702.782581Z-9b66527e",
+                           "started_at_utc":  "2026-07-29T12:17:02.782570Z",
+                           "run_directory":  "Validation/integration/raw_data/semantic_integration/20260729T121702.782581Z-9b66527e",
+                           "manifest":  "manifest.json",
+                           "artifact_set_status":  "complete",
+                           "expected_source_count":  16,
+                           "aggregation_timeout_seconds":  900.0,
+                           "source_fixture_orchestration":  "runner_started_four_domain_fixture"
+                       },
+    "aggregation_wait":  {
+                             "expected_source_count":  16,
+                             "discovered_source_count":  16,
+                             "result_count":  16,
+                             "completed_source_count":  16,
+                             "failed_sources":  [
+
+                                                ],
+                             "pending_sources":  [
+
+                                                 ],
+                             "missing_result_sources":  [
+
+                                                        ],
+                             "verified":  true,
+                             "wait_status":  "verified"
+                         },
+    "type_integrity":  {
+                           "required_standardized_namespace_count":  15,
+                           "expected_node_count_by_required_namespace":  {
+                                                                             "http://opcfoundation.org/UA/AdditiveManufacturing/":  89,
+                                                                             "http://opcfoundation.org/UA/DI/":  412,
+                                                                             "http://opcfoundation.org/UA/Dictionary/IRDI":  59,
+                                                                             "http://opcfoundation.org/UA/IA/":  114,
+                                                                             "http://opcfoundation.org/UA/ISA95-JOBCONTROL":  91,
+                                                                             "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/":  258,
+                                                                             "http://opcfoundation.org/UA/MachineTool/":  589,
+                                                                             "http://opcfoundation.org/UA/MachineVision":  790,
+                                                                             "http://opcfoundation.org/UA/MachineVision/AMCM/":  1206,
+                                                                             "http://opcfoundation.org/UA/Machinery/":  143,
+                                                                             "http://opcfoundation.org/UA/Machinery/Jobs/":  60,
+                                                                             "http://opcfoundation.org/UA/Machinery/ProcessValues/":  138,
+                                                                             "http://opcfoundation.org/UA/PADIM/":  139,
+                                                                             "http://opcfoundation.org/UA/Robotics/":  248,
+                                                                             "http://opcfoundation.org/UA/Woodworking/":  1816
+                                                                         },
+                           "node_count_by_required_namespace":  {
+                                                                    "http://opcfoundation.org/UA/AdditiveManufacturing/":  102,
+                                                                    "http://opcfoundation.org/UA/DI/":  460,
+                                                                    "http://opcfoundation.org/UA/Dictionary/IRDI":  59,
+                                                                    "http://opcfoundation.org/UA/IA/":  114,
+                                                                    "http://opcfoundation.org/UA/ISA95-JOBCONTROL":  64,
+                                                                    "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/":  225,
+                                                                    "http://opcfoundation.org/UA/MachineTool/":  617,
+                                                                    "http://opcfoundation.org/UA/MachineVision":  766,
+                                                                    "http://opcfoundation.org/UA/MachineVision/AMCM/":  1208,
+                                                                    "http://opcfoundation.org/UA/Machinery/":  155,
+                                                                    "http://opcfoundation.org/UA/Machinery/Jobs/":  52,
+                                                                    "http://opcfoundation.org/UA/Machinery/ProcessValues/":  194,
+                                                                    "http://opcfoundation.org/UA/PADIM/":  139,
+                                                                    "http://opcfoundation.org/UA/Robotics/":  404,
+                                                                    "http://opcfoundation.org/UA/Woodworking/":  1838
+                                                                },
+                           "missing_required_model_namespaces":  [
+
+                                                                 ],
+                           "missing_required_model_node_examples":  {
+                                                                        "http://opcfoundation.org/UA/AdditiveManufacturing/":  [
+                                                                                                                                   "i=5036",
+                                                                                                                                   "i=5037",
+                                                                                                                                   "i=5038"
+                                                                                                                               ],
+                                                                        "http://opcfoundation.org/UA/DI/":  [
+                                                                                                                "i=15891",
+                                                                                                                "i=15892",
+                                                                                                                "i=15900",
+                                                                                                                "i=15901",
+                                                                                                                "i=15909",
+                                                                                                                "i=15910",
+                                                                                                                "i=15911",
+                                                                                                                "i=15912",
+                                                                                                                "i=6535",
+                                                                                                                "i=6538",
+                                                                                                                "i=6551",
+                                                                                                                "i=6554"
+                                                                                                            ],
+                                                                        "http://opcfoundation.org/UA/ISA95-JOBCONTROL":  [
+                                                                                                                             "i=5002",
+                                                                                                                             "i=5003",
+                                                                                                                             "i=5004",
+                                                                                                                             "i=5005",
+                                                                                                                             "i=5006",
+                                                                                                                             "i=5007",
+                                                                                                                             "i=5008",
+                                                                                                                             "i=5009",
+                                                                                                                             "i=5010",
+                                                                                                                             "i=5011",
+                                                                                                                             "i=5012",
+                                                                                                                             "i=5013",
+                                                                                                                             "i=5014",
+                                                                                                                             "i=5015",
+                                                                                                                             "i=5016",
+                                                                                                                             "i=5017",
+                                                                                                                             "i=5018",
+                                                                                                                             "i=5019",
+                                                                                                                             "i=5020",
+                                                                                                                             "i=5021"
+                                                                                                                         ],
+                                                                        "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/":  [
+                                                                                                                                 "i=5002",
+                                                                                                                                 "i=5003",
+                                                                                                                                 "i=5004",
+                                                                                                                                 "i=5005",
+                                                                                                                                 "i=5006",
+                                                                                                                                 "i=5007",
+                                                                                                                                 "i=5008",
+                                                                                                                                 "i=5009",
+                                                                                                                                 "i=5010",
+                                                                                                                                 "i=5011",
+                                                                                                                                 "i=5012",
+                                                                                                                                 "i=5013",
+                                                                                                                                 "i=5014",
+                                                                                                                                 "i=5015",
+                                                                                                                                 "i=5016",
+                                                                                                                                 "i=5017",
+                                                                                                                                 "i=5018",
+                                                                                                                                 "i=5019",
+                                                                                                                                 "i=5020",
+                                                                                                                                 "i=5021"
+                                                                                                                             ],
+                                                                        "http://opcfoundation.org/UA/MachineVision":  [
+                                                                                                                          "i=5002",
+                                                                                                                          "i=5003",
+                                                                                                                          "i=5006",
+                                                                                                                          "i=5007",
+                                                                                                                          "i=5008",
+                                                                                                                          "i=5013",
+                                                                                                                          "i=5014",
+                                                                                                                          "i=5016",
+                                                                                                                          "i=5017",
+                                                                                                                          "i=5018",
+                                                                                                                          "i=5019",
+                                                                                                                          "i=5026",
+                                                                                                                          "i=5027",
+                                                                                                                          "i=5088",
+                                                                                                                          "i=5089",
+                                                                                                                          "i=5090",
+                                                                                                                          "i=5091",
+                                                                                                                          "i=5224",
+                                                                                                                          "i=5225",
+                                                                                                                          "i=5246"
+                                                                                                                      ],
+                                                                        "http://opcfoundation.org/UA/MachineVision/AMCM/":  [
+                                                                                                                                "i=5215",
+                                                                                                                                "i=5216",
+                                                                                                                                "i=5217",
+                                                                                                                                "i=5218",
+                                                                                                                                "i=5219",
+                                                                                                                                "i=5220"
+                                                                                                                            ],
+                                                                        "http://opcfoundation.org/UA/Machinery/Jobs/":  [
+                                                                                                                            "i=5003",
+                                                                                                                            "i=5004",
+                                                                                                                            "i=5005",
+                                                                                                                            "i=5006",
+                                                                                                                            "i=5007",
+                                                                                                                            "i=5008",
+                                                                                                                            "i=5009",
+                                                                                                                            "i=5010"
+                                                                                                                        ],
+                                                                        "http://opcfoundation.org/UA/Woodworking/":  [
+                                                                                                                         "i=5010",
+                                                                                                                         "i=5011",
+                                                                                                                         "i=5012",
+                                                                                                                         "i=5013",
+                                                                                                                         "i=5014",
+                                                                                                                         "i=5015"
+                                                                                                                     ]
+                                                                    },
+                           "missing_required_model_node_count_by_namespace":  {
+                                                                                  "http://opcfoundation.org/UA/AdditiveManufacturing/":  3,
+                                                                                  "http://opcfoundation.org/UA/DI/":  12,
+                                                                                  "http://opcfoundation.org/UA/ISA95-JOBCONTROL":  27,
+                                                                                  "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/":  33,
+                                                                                  "http://opcfoundation.org/UA/MachineVision":  34,
+                                                                                  "http://opcfoundation.org/UA/MachineVision/AMCM/":  6,
+                                                                                  "http://opcfoundation.org/UA/Machinery/Jobs/":  8,
+                                                                                  "http://opcfoundation.org/UA/Woodworking/":  6
+                                                                              },
+                           "missing_nodeset_mapping_namespaces":  [
+
+                                                                  ],
+                           "nodeset_expectation_errors":  [
+
+                                                          ],
+                           "expected_type_count_by_required_namespace":  {
+                                                                             "http://opcfoundation.org/UA/AdditiveManufacturing/":  10,
+                                                                             "http://opcfoundation.org/UA/DI/":  52,
+                                                                             "http://opcfoundation.org/UA/Dictionary/IRDI":  0,
+                                                                             "http://opcfoundation.org/UA/IA/":  26,
+                                                                             "http://opcfoundation.org/UA/ISA95-JOBCONTROL":  15,
+                                                                             "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/":  19,
+                                                                             "http://opcfoundation.org/UA/MachineTool/":  73,
+                                                                             "http://opcfoundation.org/UA/MachineVision":  60,
+                                                                             "http://opcfoundation.org/UA/MachineVision/AMCM/":  45,
+                                                                             "http://opcfoundation.org/UA/Machinery/":  11,
+                                                                             "http://opcfoundation.org/UA/Machinery/Jobs/":  9,
+                                                                             "http://opcfoundation.org/UA/Machinery/ProcessValues/":  4,
+                                                                             "http://opcfoundation.org/UA/PADIM/":  27,
+                                                                             "http://opcfoundation.org/UA/Robotics/":  26,
+                                                                             "http://opcfoundation.org/UA/Woodworking/":  18
+                                                                         },
+                           "type_count_by_required_namespace":  {
+                                                                    "http://opcfoundation.org/UA/AdditiveManufacturing/":  10,
+                                                                    "http://opcfoundation.org/UA/DI/":  52,
+                                                                    "http://opcfoundation.org/UA/Dictionary/IRDI":  0,
+                                                                    "http://opcfoundation.org/UA/IA/":  26,
+                                                                    "http://opcfoundation.org/UA/ISA95-JOBCONTROL":  15,
+                                                                    "http://opcfoundation.org/UA/ISA95-JOBCONTROL_V2/":  19,
+                                                                    "http://opcfoundation.org/UA/MachineTool/":  73,
+                                                                    "http://opcfoundation.org/UA/MachineVision":  60,
+                                                                    "http://opcfoundation.org/UA/MachineVision/AMCM/":  45,
+                                                                    "http://opcfoundation.org/UA/Machinery/":  11,
+                                                                    "http://opcfoundation.org/UA/Machinery/Jobs/":  9,
+                                                                    "http://opcfoundation.org/UA/Machinery/ProcessValues/":  4,
+                                                                    "http://opcfoundation.org/UA/PADIM/":  27,
+                                                                    "http://opcfoundation.org/UA/Robotics/":  26,
+                                                                    "http://opcfoundation.org/UA/Woodworking/":  18
+                                                                },
+                           "missing_required_type_namespaces":  [
+
+                                                                ],
+                           "dangling_type_definition_count":  0,
+                           "dangling_type_definition_examples":  [
+
+                                                                 ],
+                           "verified_remapped_type_definition_count":  164,
+                           "unremapped_standardized_type_definition_count":  0,
+                           "unremapped_standardized_type_definition_examples":  [
+
+                                                                                ],
+                           "passed":  true
+                       },
+    "rule_semantics":  {
+                           "rule_count":  2756,
+                           "reference_semantics_unverified_count":  0,
+                           "reference_semantics_unverified_rule_indices":  [
+
+                                                                           ],
+                           "unique_source_namespace_projection_count":  2756,
+                           "unique_target_namespace_projection_count":  0,
+                           "source_identity_collision_count":  0,
+                           "source_identity_collision_examples":  [
+
+                                                                  ],
+                           "duplicate_source_identity_count":  0,
+                           "duplicate_source_identity_examples":  [
+
+                                                                  ],
+                           "intended_consolidation_group_count":  18,
+                           "intended_consolidation_examples":  [
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Error"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Halted"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Operational"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Preoperational"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "ComputingDevices"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "ImageSensors"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "Lamps"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_001_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "Lenses"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                                          "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Error"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Halted"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Operational"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "VisionStateMachine"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision",
+                                                                                             "name":  "Preoperational"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "ComputingDevices"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "ImageSensors"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "Lamps"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   },
+                                                                   {
+                                                                       "merge_key":  [
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/",
+                                                                                             "name":  "Objects"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "urn:plcm:validation:machine-vision",
+                                                                                             "name":  "DualCameraVisionSystem_002_Assets"
+                                                                                         },
+                                                                                         {
+                                                                                             "namespace_uri":  "http://opcfoundation.org/UA/MachineVision/AMCM/",
+                                                                                             "name":  "Lenses"
+                                                                                         }
+                                                                                     ],
+                                                                       "source_ids":  [
+                                                                                          "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                                          "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                                      ]
+                                                                   }
+                                                               ],
+                           "policy_violation_count":  0,
+                           "policy_violation_examples":  [
+
+                                                         ],
+                           "passed":  true
+                       },
+    "machine_vision_assignment":  {
+                                      "fixture_contract":  "four machine-vision source servers form two semantic systems; replicas 1/2 map to system 001 and replicas 3/4 to system 002",
+                                      "systems":  [
+                                                      {
+                                                          "system_id":  "001",
+                                                          "source_count":  2,
+                                                          "source_ids":  [
+                                                                             "opc.tcp://127.0.0.1:4864/plcm/machine-vision/1",
+                                                                             "opc.tcp://127.0.0.1:4865/plcm/machine-vision/2"
+                                                                         ]
+                                                      },
+                                                      {
+                                                          "system_id":  "002",
+                                                          "source_count":  2,
+                                                          "source_ids":  [
+                                                                             "opc.tcp://127.0.0.1:4866/plcm/machine-vision/3",
+                                                                             "opc.tcp://127.0.0.1:4867/plcm/machine-vision/4"
+                                                                         ]
+                                                      }
+                                                  ],
+                                      "criteria":  {
+                                                       "exactly_two_semantic_systems":  true,
+                                                       "exactly_two_sources_per_system":  true,
+                                                       "four_distinct_sources_assigned_once":  true
+                                                   },
+                                      "passed":  true
+                                  },
+    "domain_table":  {
+                         "rows":  [
+                                      {
+                                          "domain":  "Robotics",
+                                          "inst":  4,
+                                          "rules":  612,
+                                          "targets":  184
+                                      },
+                                      {
+                                          "domain":  "Machine Vision",
+                                          "inst":  4,
+                                          "rules":  44,
+                                          "targets":  18
+                                      },
+                                      {
+                                          "domain":  "Additive Manufacturing",
+                                          "inst":  4,
+                                          "rules":  1836,
+                                          "targets":  172
+                                      },
+                                      {
+                                          "domain":  "Woodworking",
+                                          "inst":  4,
+                                          "rules":  264,
+                                          "targets":  24
+                                      }
+                                  ],
+                         "total":  {
+                                       "inst":  16,
+                                       "rules":  2756,
+                                       "targets":  398
+                                   }
+                     },
+    "e01_acceptance":  {
+                           "expected_source_count":  16,
+                           "discovered_source_count":  16,
+                           "accepted_source_count":  16,
+                           "unresolved_source_path_count":  0,
+                           "unresolved_target_path_count":  0,
+                           "accepted_not_completed_sources":  [
+
+                                                              ],
+                           "failed_sources":  [
+
+                                              ],
+                           "criteria":  {
+                                            "zero_unresolved_source_paths":  true,
+                                            "zero_unresolved_target_paths":  true,
+                                            "zero_dangling_type_references":  true,
+                                            "required_standardized_types_present":  true,
+                                            "required_standardized_models_present":  true,
+                                            "standardized_type_definitions_remapped":  true,
+                                            "all_rule_path_segments_namespace_qualified":  true,
+                                            "reference_transformation_policy_verified":  true,
+                                            "source_identity_and_merge_policy_valid":  true,
+                                            "rule_sources_match_accepted_sources":  true,
+                                            "executor_projection_matches_rich_rules":  true,
+                                            "machine_vision_two_system_assignment_verified":  true,
+                                            "expected_source_count_reached":  true,
+                                            "every_discovered_source_has_result":  true,
+                                            "every_discovered_source_was_accepted":  true,
+                                            "every_accepted_source_verified_complete":  true,
+                                            "no_source_aggregation_failure":  true
+                                        },
+                           "passed":  true
+                       },
+    "public_subset":  {
+                          "excluded":  [
+                                           "source endpoints",
+                                           "per-rule enriched records",
+                                           "full address-space and generated rule artifacts"
+                                       ],
+                          "reason":  "Only the principal result and acceptance fields are retained."
+                      }
+}

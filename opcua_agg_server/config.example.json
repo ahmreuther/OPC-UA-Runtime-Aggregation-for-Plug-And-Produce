@@ -1,0 +1,6 @@
+{
+  "host": "127.0.0.1",
+  "port": 48400,
+  "opcua_github_branch": "v1.04",
+  "hosts": []
+}

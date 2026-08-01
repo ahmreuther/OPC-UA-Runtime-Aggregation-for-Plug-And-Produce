@@ -1,0 +1,11 @@
+# Preserve the curated research-data bytes exactly across operating systems.
+/.gitattributes -text
+/Validation/integration/raw_data/** -text
+/Validation/configuration/runs/** -text
+/Validation/performance/raw_data/** -text
+/Validation/performance/derived/** -text
+/DATA_DICTIONARY.md -text
+/RESEARCH_DATA.md -text
+/RESEARCH_DATA_METADATA.md -text
+/RESEARCH_DATA_FILE_MANIFEST.csv -text
+/RESEARCH_DATA_CHECKSUMS_SHA256.txt -text

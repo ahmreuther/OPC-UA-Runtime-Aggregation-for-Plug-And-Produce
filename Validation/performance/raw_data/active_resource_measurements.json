@@ -1,0 +1,32 @@
+{
+  "schema": "ojies.active-resource-measurements/v2",
+  "server_counts": [
+    1,
+    5,
+    10,
+    25,
+    50,
+    75,
+    100
+  ],
+  "platforms": {
+    "pi5_linux_distributed": {
+      "label": "Raspberry Pi 5 with Linux sources",
+      "data_directory": "Validation/performance/raw_data/resource_usage/pi5_linux_distributed",
+      "manifest_directory": "Validation/performance/raw_data/resource_usage/pi5_linux_distributed/manifests",
+      "outcome_manifest_directory": "Validation/performance/raw_data/resource_usage/pi5_linux_distributed/manifests",
+      "resource_repetitions": [
+        1,
+        2,
+        3
+      ],
+      "measurement_backend": "tcpdump_tshark_ethernet_ip_bytes",
+      "activation_condition": "all 21 canonical runs passed exact listening, URDF payload, LDS registration, terminal aggregation, and CSV hash checks"
+    }
+  },
+  "platform_order": [
+    "pi5_linux_distributed"
+  ],
+  "updated_at_utc": "2026-07-31T06:19:29.192850+00:00",
+  "source": "Validation/performance/acquisition/activate_resource_platform.py"
+}

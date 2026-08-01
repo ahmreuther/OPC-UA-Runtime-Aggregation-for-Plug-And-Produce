@@ -1,0 +1,47 @@
+# Rust and native builds
+target/
+**/target/
+build/
+**/build-*/
+CMakeFiles/
+CMakeCache.txt
+
+# Python
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Runtime state and credentials
+.env
+*.key
+private.pem
+**/pki/private/
+opcua_agg_server/pki/
+opcua_agg_server/config.json
+opcua_agg_server/namespaces.json
+opcua_agg_server/entry_points.json
+opcua_agg_server/nodeset_mapping.json
+opcua_agg_server/rules.json
+opcua_agg_server/rules_executor.json
+opcua_agg_server/maps.db3
+opcua_agg_server/address_space_exports/
+logs/
+**/logs/
+
+# External research data is overlaid only in disposable verification clones
+Validation/performance/raw_data/
+Validation/performance/derived/
+Validation/integration/raw_data/
+Validation/configuration/runs/
+
+# Local verification outputs
+verification-output/

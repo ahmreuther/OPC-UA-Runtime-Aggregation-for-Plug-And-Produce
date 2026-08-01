@@ -1,0 +1,115 @@
+{
+    "schema":  "ojies.public-e01-result/v1",
+    "source_schema":  "ojies.semantic-integration-run/v2",
+    "run_id":  "20260729T121702.782581Z-9b66527e",
+    "started_at_utc":  "2026-07-29T12:17:02.782570Z",
+    "completed_at_utc":  "2026-07-29T12:21:46.053111Z",
+    "artifact_set_status":  "complete",
+    "scientific_validation_status":  "passed",
+    "related_claims":  [
+                           "C01",
+                           "C02"
+                       ],
+    "related_experiments":  [
+                                "E01"
+                            ],
+    "repository":  {
+                       "commit":  "a056c4f756da710e351b4a7f5ffe961aef3dd9b1",
+                       "dirty":  true
+                   },
+    "server_binary":  {
+                          "size_bytes":  27860480,
+                          "sha256":  "00951ca298c2007c5c3fcd83f15976ea64d11f0113b0ba005bfc97a07d1dbde5"
+                      },
+    "implementation_provenance":  {
+                                      "opcua_dependency":  {
+                                                               "cargo_manifest":  "ojies_agg_server/opcua_agg_server/Cargo.toml",
+                                                               "dependency_name":  "opcua",
+                                                               "cargo_declaration":  {
+                                                                                         "path":  "vendor/opcua"
+                                                                                     },
+                                                               "source_type":  "local_path",
+                                                               "resolved_path":  "ojies_agg_server/opcua_agg_server/vendor/opcua",
+                                                               "tree":  {
+                                                                            "algorithm":  "sha256(relative_path_nul_file_bytes_nul)",
+                                                                            "sha256":  "b74ecbb10c056a5ab83fb5c38a265a7c7279d5211c7af86cc09bbd54c386eebe",
+                                                                            "file_count":  543,
+                                                                            "total_size_bytes":  8726082
+                                                                        }
+                                                           },
+                                      "discovery":  {
+                                                        "evidence_file":  "Validation/integration/raw_data/semantic_integration/20260729T121702.782581Z-9b66527e/server_console.log",
+                                                        "find_servers_success":  true,
+                                                        "find_servers_on_network_success":  true,
+                                                        "find_servers_on_network_fallback":  false,
+                                                        "active_mode":  "find_servers_plus_find_servers_on_network"
+                                                    }
+                                  },
+    "data_quality":  {
+                         "rule_count":  2756,
+                         "executor_rule_count":  2756,
+                         "executor_projection_matches_rich_rules":  true,
+                         "unresolved_source_path_count":  0,
+                         "unresolved_target_path_count":  0,
+                         "indexed_namespace_count_in_xml":  119,
+                         "dangling_type_definition_count":  0,
+                         "missing_required_type_namespaces":  [
+
+                                                              ],
+                         "missing_required_model_namespaces":  [
+
+                                                               ],
+                         "accepted_source_count":  16,
+                         "verified_completed_source_count":  16,
+                         "unverified_reference_semantics_count":  0,
+                         "merge_policy_violation_count":  0,
+                         "unique_source_namespace_projection_count":  2756,
+                         "unique_target_namespace_projection_count":  0,
+                         "machine_vision_two_system_assignment_verified":  true,
+                         "namespace_count_convention":  "includes the implicit OPC UA namespace at index 0"
+                     },
+    "e01_acceptance":  {
+                           "expected_source_count":  16,
+                           "discovered_source_count":  16,
+                           "accepted_source_count":  16,
+                           "unresolved_source_path_count":  0,
+                           "unresolved_target_path_count":  0,
+                           "accepted_not_completed_sources":  [
+
+                                                              ],
+                           "failed_sources":  [
+
+                                              ],
+                           "criteria":  {
+                                            "zero_unresolved_source_paths":  true,
+                                            "zero_unresolved_target_paths":  true,
+                                            "zero_dangling_type_references":  true,
+                                            "required_standardized_types_present":  true,
+                                            "required_standardized_models_present":  true,
+                                            "standardized_type_definitions_remapped":  true,
+                                            "all_rule_path_segments_namespace_qualified":  true,
+                                            "reference_transformation_policy_verified":  true,
+                                            "source_identity_and_merge_policy_valid":  true,
+                                            "rule_sources_match_accepted_sources":  true,
+                                            "executor_projection_matches_rich_rules":  true,
+                                            "machine_vision_two_system_assignment_verified":  true,
+                                            "expected_source_count_reached":  true,
+                                            "every_discovered_source_has_result":  true,
+                                            "every_discovered_source_was_accepted":  true,
+                                            "every_accepted_source_verified_complete":  true,
+                                            "no_source_aggregation_failure":  true
+                                        },
+                           "passed":  true
+                       },
+    "interpretation_note":  "COMPLETED means that all expected files were captured and parsed. VALIDATED is written only when every E01 acceptance criterion passes.",
+    "public_subset":  {
+                          "purpose":  "Compact evidence for the principal E01 results.",
+                          "excluded":  [
+                                           "full address-space XML",
+                                           "generated rule snapshots",
+                                           "full repository dirty-worktree patch",
+                                           "verbose process logs"
+                                       ],
+                          "exclusion_reason":  "The public release retains the principal result evidence while avoiding redundant generated content and unrelated worktree state."
+                      }
+}
