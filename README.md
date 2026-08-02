@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21756816.svg)](https://doi.org/10.5281/zenodo.21756816)
+
+
 # Runtime aggregation of heterogeneous OPC UA information models
 
 Research software artifact for the manuscript “Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug & Produce Systems”.
