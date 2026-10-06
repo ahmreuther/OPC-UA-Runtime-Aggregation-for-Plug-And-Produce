@@ -1,0 +1,78 @@
+{
+  "run_id": "20260921T144605.568057Z-390dacaf",
+  "repetition": 2,
+  "status": "passed",
+  "gates": {
+    "exact_terminal_results": true,
+    "faults_injected": true,
+    "bounded_fault_outcomes": true,
+    "failed_state_removed": true,
+    "no_late_state_reappearance": true,
+    "following_source_completes": true,
+    "burst_queued_then_serialized": true,
+    "healthy_read_during_faults": true,
+    "five_healthy_proxies_readable": true,
+    "held_mutex_process_failstop": true,
+    "binaries_unchanged_during_run": true
+  },
+  "read_count": 60,
+  "read_failures": 0,
+  "elapsed_seconds": 21.04107140004635,
+  "terminal_results": [
+    {
+      "kind": "healthy",
+      "outcome": "completed",
+      "elapsed_ms": 383.1241,
+      "received_elapsed_ms": 8836.617500055581
+    },
+    {
+      "kind": "namespace_stall",
+      "outcome": "deadline",
+      "elapsed_ms": 2004.0672000000002,
+      "received_elapsed_ms": 10841.326100053266
+    },
+    {
+      "kind": "healthy",
+      "outcome": "completed",
+      "elapsed_ms": 370.6402,
+      "received_elapsed_ms": 11972.617299994454
+    },
+    {
+      "kind": "healthy",
+      "outcome": "completed",
+      "elapsed_ms": 475.89369999999997,
+      "received_elapsed_ms": 12448.596699978225
+    },
+    {
+      "kind": "healthy",
+      "outcome": "completed",
+      "elapsed_ms": 433.7466,
+      "received_elapsed_ms": 12882.294800016098
+    },
+    {
+      "kind": "healthy",
+      "outcome": "completed",
+      "elapsed_ms": 392.5764,
+      "received_elapsed_ms": 13274.878100026399
+    },
+    {
+      "kind": "ack_stall",
+      "outcome": "failed",
+      "elapsed_ms": 2008.9540000000002,
+      "received_elapsed_ms": 15283.819500007667
+    }
+  ],
+  "process_test": {
+    "returncode": 70,
+    "process_elapsed_ms": 272.07870001439005,
+    "supervisor": {
+      "cleanup_grace_ms": 100,
+      "elapsed_ms": 202.5023,
+      "exit_code": 70,
+      "following_source_rejected": true,
+      "outcome": "UnsafeToContinue",
+      "timeout_ms": 100
+    }
+  },
+  "scope": "Local synthetic-source lifecycle tests on one host. Process termination interrupts service and requires external restart."
+}

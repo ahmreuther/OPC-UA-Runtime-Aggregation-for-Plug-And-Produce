@@ -1,0 +1,823 @@
+{
+  "schema": "ojies.public-current-cohort/v1",
+  "as_of": "2026-10-06",
+  "selection": "Explicit frozen experiment cohorts; historical E01-E05 are not pooled.",
+  "E01": [
+    {
+      "run_id": "e01-windows-20260929-rev029-r1",
+      "summary": "Validation/current_20261006/E01/e01-windows-20260929-rev029-r1/summary_public.json",
+      "domain_table": "Validation/current_20261006/E01/e01-windows-20260929-rev029-r1/domain_table.csv"
+    },
+    {
+      "run_id": "e01-windows-20260929-rev029-r2",
+      "summary": "Validation/current_20261006/E01/e01-windows-20260929-rev029-r2/summary_public.json",
+      "domain_table": "Validation/current_20261006/E01/e01-windows-20260929-rev029-r2/domain_table.csv"
+    },
+    {
+      "run_id": "e01-windows-20260929-rev029-r3",
+      "summary": "Validation/current_20261006/E01/e01-windows-20260929-rev029-r3/summary_public.json",
+      "domain_table": "Validation/current_20261006/E01/e01-windows-20260929-rev029-r3/domain_table.csv"
+    }
+  ],
+  "E03": [
+    {
+      "run_id": "20260930T105757.188826Z-e03-67688-rev040-b02-eva-r1",
+      "manifest": "Validation/current_20261006/E03/20260930T105757.188826Z-e03-67688-rev040-b02-eva-r1/manifest.json",
+      "measurements": "Validation/current_20261006/E03/20260930T105757.188826Z-e03-67688-rev040-b02-eva-r1/measurements.csv"
+    },
+    {
+      "run_id": "20260930T110331.142328Z-e03-12428-rev040-b02-eva-r2",
+      "manifest": "Validation/current_20261006/E03/20260930T110331.142328Z-e03-12428-rev040-b02-eva-r2/manifest.json",
+      "measurements": "Validation/current_20261006/E03/20260930T110331.142328Z-e03-12428-rev040-b02-eva-r2/measurements.csv"
+    },
+    {
+      "run_id": "20260930T110827.375696Z-e03-46104-rev040-b02-eva-r3",
+      "manifest": "Validation/current_20261006/E03/20260930T110827.375696Z-e03-46104-rev040-b02-eva-r3/manifest.json",
+      "measurements": "Validation/current_20261006/E03/20260930T110827.375696Z-e03-46104-rev040-b02-eva-r3/measurements.csv"
+    }
+  ],
+  "E08": [
+    {
+      "run_id": "20260921T144548.443427Z-effe2163",
+      "summary": "Validation/current_20261006/E08/20260921T144548.443427Z-effe2163/summary_public.json",
+      "healthy_reads": "Validation/current_20261006/E08/20260921T144548.443427Z-effe2163/healthy_reads.json"
+    },
+    {
+      "run_id": "20260921T144605.568057Z-390dacaf",
+      "summary": "Validation/current_20261006/E08/20260921T144605.568057Z-390dacaf/summary_public.json",
+      "healthy_reads": "Validation/current_20261006/E08/20260921T144605.568057Z-390dacaf/healthy_reads.json"
+    },
+    {
+      "run_id": "20260921T144626.629388Z-b55c514a",
+      "summary": "Validation/current_20261006/E08/20260921T144626.629388Z-b55c514a/summary_public.json",
+      "healthy_reads": "Validation/current_20261006/E08/20260921T144626.629388Z-b55c514a/healthy_reads.json"
+    }
+  ],
+  "E09": [
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n1",
+      "public_id": "pdist-pilinux-20260923T060000Z-e09-1n-r1",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "requested_server_count": 1,
+      "repetition": 1,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923T060000Z-e09-1n-r1/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2000.555726,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T06:10:41.782000+00:00",
+        "last_sample_utc": "2026-09-23T06:44:01.236000+00:00",
+        "network_bin_origin_epoch": 1790143840.657511,
+        "measurement_started_at_utc": "2026-09-23T06:10:40.641058001Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 7.099545955657959,
+        "window_start_utc": "2026-09-23T06:10:40.641058+00:00",
+        "window_end_utc": "2026-09-23T06:10:47.740604+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.09587830561500595,
+        "packet_exact_network_MiB": 1.1109485626220703
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 130.969,
+        "network_MiB": 1.868793469528969
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n5",
+      "public_id": "pdist-pilinux-20260923T060000Z-e09-5n-r1",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "requested_server_count": 5,
+      "repetition": 1,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923T060000Z-e09-5n-r1/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1818,
+        "actual_duration_seconds": 2000.464587,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T06:44:30.198000+00:00",
+        "last_sample_utc": "2026-09-23T07:17:49.559000+00:00",
+        "network_bin_origin_epoch": 1790145869.0767195,
+        "measurement_started_at_utc": "2026-09-23T06:44:29.060228498Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 38.207517862319946,
+        "window_start_utc": "2026-09-23T06:44:29.060228+00:00",
+        "window_end_utc": "2026-09-23T06:45:07.267746+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.1177513480806231,
+        "packet_exact_network_MiB": 6.617242813110352
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 350.641,
+        "network_MiB": 10.259869590583481
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n75",
+      "public_id": "pdist-pilinux-20260923T060000Z-e09-75n-r1",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "requested_server_count": 75,
+      "repetition": 1,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923T060000Z-e09-75n-r1/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1813,
+        "actual_duration_seconds": 2000.767126,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T07:19:21.490000+00:00",
+        "last_sample_utc": "2026-09-23T07:52:41.156000+00:00",
+        "network_bin_origin_epoch": 1790147960.3691704,
+        "measurement_started_at_utc": "2026-09-23T07:19:20.352009191Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 413.91086983680725,
+        "window_start_utc": "2026-09-23T07:19:20.352009+00:00",
+        "window_end_utc": "2026-09-23T07:26:14.262879+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.22008743301371061,
+        "packet_exact_network_MiB": 97.60612392425537
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 3945.75,
+        "network_MiB": 140.7934379721493
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n100",
+      "public_id": "pdist-pilinux-20260923T060000Z-e09-100n-r1",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "requested_server_count": 100,
+      "repetition": 1,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923T060000Z-e09-100n-r1/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1809,
+        "actual_duration_seconds": 2000.416949,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T07:53:43.875000+00:00",
+        "last_sample_utc": "2026-09-23T08:27:03.191000+00:00",
+        "network_bin_origin_epoch": 1790150022.753459,
+        "measurement_started_at_utc": "2026-09-23T07:53:42.736377445Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 550.794958114624,
+        "window_start_utc": "2026-09-23T07:53:42.736377+00:00",
+        "window_end_utc": "2026-09-23T08:02:53.531335+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.2513923430933352,
+        "packet_exact_network_MiB": 130.3482904434204
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 5004.766,
+        "network_MiB": 182.8589010124338
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n1",
+      "public_id": "pdist-pilinux-20260923T060000Z-e09-1n-r2",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "requested_server_count": 1,
+      "repetition": 2,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923T060000Z-e09-1n-r2/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2000.938846,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T08:28:31.687000+00:00",
+        "last_sample_utc": "2026-09-23T09:01:51.521000+00:00",
+        "network_bin_origin_epoch": 1790152110.564298,
+        "measurement_started_at_utc": "2026-09-23T08:28:30.547732827Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 7.134959936141968,
+        "window_start_utc": "2026-09-23T08:28:30.547732+00:00",
+        "window_end_utc": "2026-09-23T08:28:37.682692+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.09383187347733474,
+        "packet_exact_network_MiB": 1.1121349334716797
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 131.156,
+        "network_MiB": 1.8695831131850729
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n10",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-10n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 10,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-10n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2000.947564,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T12:32:24.791000+00:00",
+        "last_sample_utc": "2026-09-23T13:05:44.642000+00:00",
+        "network_bin_origin_epoch": 1790166743.6704943,
+        "measurement_started_at_utc": "2026-09-23T12:32:23.653035245Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 63.59114098548889,
+        "window_start_utc": "2026-09-23T12:32:23.653035+00:00",
+        "window_end_utc": "2026-09-23T12:33:27.244176+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.12559751392591234,
+        "packet_exact_network_MiB": 12.747593879699707
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 529.766,
+        "network_MiB": 19.89416503924782
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n25",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-25n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 25,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-25n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2000.550563,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T13:06:19.301000+00:00",
+        "last_sample_utc": "2026-09-23T13:39:38.748000+00:00",
+        "network_bin_origin_epoch": 1790168778.1793149,
+        "measurement_started_at_utc": "2026-09-23T13:06:18.162980921Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 145.0948839187622,
+        "window_start_utc": "2026-09-23T13:06:18.162980+00:00",
+        "window_end_utc": "2026-09-23T13:08:43.257864+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.15124275805288095,
+        "packet_exact_network_MiB": 32.15043067932129
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 1284.984,
+        "network_MiB": 49.16318797433693
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n50",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-50n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 50,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-50n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1817,
+        "actual_duration_seconds": 2000.528975,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T13:40:18.896000+00:00",
+        "last_sample_utc": "2026-09-23T14:13:38.326000+00:00",
+        "network_bin_origin_epoch": 1790170817.773457,
+        "measurement_started_at_utc": "2026-09-23T13:40:17.756175033Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 271.1621868610382,
+        "window_start_utc": "2026-09-23T13:40:17.756175+00:00",
+        "window_end_utc": "2026-09-23T13:44:48.918362+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.18716922309192457,
+        "packet_exact_network_MiB": 64.99876689910889
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 3042.125,
+        "network_MiB": 96.5557756377385
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n10",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-10n-r5",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 10,
+      "repetition": 5,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-10n-r5/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1820,
+        "actual_duration_seconds": 2000.529525,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T14:14:29.959000+00:00",
+        "last_sample_utc": "2026-09-23T14:47:49.384000+00:00",
+        "network_bin_origin_epoch": 1790172868.8362336,
+        "measurement_started_at_utc": "2026-09-23T14:14:28.819715506Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 64.09859609603882,
+        "window_start_utc": "2026-09-23T14:14:28.819715+00:00",
+        "window_end_utc": "2026-09-23T14:15:32.918311+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.13242370398046088,
+        "packet_exact_network_MiB": 12.74904727935791
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 530.016,
+        "network_MiB": 19.893486019105584
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n25",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-25n-r5",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 25,
+      "repetition": 5,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-25n-r5/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2000.72116,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T14:48:24.531000+00:00",
+        "last_sample_utc": "2026-09-23T15:21:44.150000+00:00",
+        "network_bin_origin_epoch": 1790174903.410208,
+        "measurement_started_at_utc": "2026-09-23T14:48:23.393705980Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 139.64465403556824,
+        "window_start_utc": "2026-09-23T14:48:23.393705+00:00",
+        "window_end_utc": "2026-09-23T14:50:43.038359+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.15944273839919593,
+        "packet_exact_network_MiB": 32.14618396759033
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 1380.391,
+        "network_MiB": 49.21414468554814
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n50",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-50n-r5",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 50,
+      "repetition": 5,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-50n-r5/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1818,
+        "actual_duration_seconds": 2001.002024,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T15:22:24.117000+00:00",
+        "last_sample_utc": "2026-09-23T15:55:44.016000+00:00",
+        "network_bin_origin_epoch": 1790176942.995339,
+        "measurement_started_at_utc": "2026-09-23T15:22:22.978908851Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 279.2329649925232,
+        "window_start_utc": "2026-09-23T15:22:22.978908+00:00",
+        "window_end_utc": "2026-09-23T15:27:02.211873+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.18129458140210303,
+        "packet_exact_network_MiB": 65.0158863067627
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 3060.062,
+        "network_MiB": 96.45984935548434
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n10",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-10n-r6",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 10,
+      "repetition": 6,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-10n-r6/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2001.011579,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T15:56:35.169000+00:00",
+        "last_sample_utc": "2026-09-23T16:29:55.085000+00:00",
+        "network_bin_origin_epoch": 1790178994.0480614,
+        "measurement_started_at_utc": "2026-09-23T15:56:34.031570460Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 64.72651815414429,
+        "window_start_utc": "2026-09-23T15:56:34.031570+00:00",
+        "window_end_utc": "2026-09-23T15:57:38.758088+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.13240076228401237,
+        "packet_exact_network_MiB": 12.740899085998535
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 530.109,
+        "network_MiB": 19.883255000908214
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n25",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-25n-r6",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 25,
+      "repetition": 6,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-25n-r6/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1819,
+        "actual_duration_seconds": 2000.571462,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T16:30:29.684000+00:00",
+        "last_sample_utc": "2026-09-23T17:03:49.148000+00:00",
+        "network_bin_origin_epoch": 1790181028.558641,
+        "measurement_started_at_utc": "2026-09-23T16:30:28.541138204Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 140.80401301383972,
+        "window_start_utc": "2026-09-23T16:30:28.541138+00:00",
+        "window_end_utc": "2026-09-23T16:32:49.345151+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.15799854911053815,
+        "packet_exact_network_MiB": 32.144185066223145
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 1072.141,
+        "network_MiB": 49.19143199055687
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n50",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-a-50n-r6",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "requested_server_count": 50,
+      "repetition": 6,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-a-50n-r6/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1816,
+        "actual_duration_seconds": 2000.202414,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T17:04:29.257000+00:00",
+        "last_sample_utc": "2026-09-23T17:37:48.354000+00:00",
+        "network_bin_origin_epoch": 1790183068.1326985,
+        "measurement_started_at_utc": "2026-09-23T17:04:28.116317654Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 278.31271505355835,
+        "window_start_utc": "2026-09-23T17:04:28.116317+00:00",
+        "window_end_utc": "2026-09-23T17:09:06.429032+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.18316708413638008,
+        "packet_exact_network_MiB": 65.00533866882324
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 3033.391,
+        "network_MiB": 96.44057081994598
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n5",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-b-5n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "requested_server_count": 5,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-b-5n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1818,
+        "actual_duration_seconds": 2000.361942,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T17:38:41.675000+00:00",
+        "last_sample_utc": "2026-09-23T18:12:00.940000+00:00",
+        "network_bin_origin_epoch": 1790185120.5550265,
+        "measurement_started_at_utc": "2026-09-23T17:38:40.538436184Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 37.48376798629761,
+        "window_start_utc": "2026-09-23T17:38:40.538436+00:00",
+        "window_end_utc": "2026-09-23T17:39:18.022204+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.11991552320760848,
+        "packet_exact_network_MiB": 6.615911483764648
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 350.656,
+        "network_MiB": 10.259469010743361
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n75",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-b-75n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "requested_server_count": 75,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-b-75n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1811,
+        "actual_duration_seconds": 2000.088974,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T18:12:35.327000+00:00",
+        "last_sample_utc": "2026-09-23T18:45:54.314000+00:00",
+        "network_bin_origin_epoch": 1790187154.2057915,
+        "measurement_started_at_utc": "2026-09-23T18:12:34.189360722Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 426.7347321510315,
+        "window_start_utc": "2026-09-23T18:12:34.189360+00:00",
+        "window_end_utc": "2026-09-23T18:19:40.924092+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.20588627612441043,
+        "packet_exact_network_MiB": 97.64812278747559
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 4032.922,
+        "network_MiB": 140.52562331458088
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n100",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-b-100n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "requested_server_count": 100,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-b-100n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1807,
+        "actual_duration_seconds": 2000.063677,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T18:46:57.910000+00:00",
+        "last_sample_utc": "2026-09-23T19:20:16.871000+00:00",
+        "network_bin_origin_epoch": 1790189216.7881618,
+        "measurement_started_at_utc": "2026-09-23T18:46:56.770939987Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 570.5617458820343,
+        "window_start_utc": "2026-09-23T18:46:56.770939+00:00",
+        "window_end_utc": "2026-09-23T18:56:27.332685+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.2326127460530312,
+        "packet_exact_network_MiB": 130.44953727722168
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 4928.438,
+        "network_MiB": 182.28254602871053
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n5",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-b-5n-r5",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "requested_server_count": 5,
+      "repetition": 5,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-b-5n-r5/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1818,
+        "actual_duration_seconds": 2000.320137,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T19:21:43.502000+00:00",
+        "last_sample_utc": "2026-09-23T19:55:02.723000+00:00",
+        "network_bin_origin_epoch": 1790191302.3790135,
+        "measurement_started_at_utc": "2026-09-23T19:21:42.361658288Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 38.49339580535889,
+        "window_start_utc": "2026-09-23T19:21:42.361658+00:00",
+        "window_end_utc": "2026-09-23T19:22:20.855054+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.11146051371531376,
+        "packet_exact_network_MiB": 6.620302200317383
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 350.344,
+        "network_MiB": 10.261826506723443
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n75",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-b-75n-r5",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "requested_server_count": 75,
+      "repetition": 5,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-b-75n-r5/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1810,
+        "actual_duration_seconds": 2000.161119,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T19:55:34.973000+00:00",
+        "last_sample_utc": "2026-09-23T20:28:54.031000+00:00",
+        "network_bin_origin_epoch": 1790193333.8502667,
+        "measurement_started_at_utc": "2026-09-23T19:55:33.833749780Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 431.64946603775024,
+        "window_start_utc": "2026-09-23T19:55:33.833749+00:00",
+        "window_end_utc": "2026-09-23T20:02:45.483215+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.2130551970020225,
+        "packet_exact_network_MiB": 97.65769100189209
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 4018.172,
+        "network_MiB": 140.43594836119277
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n100",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-b-100n-r5",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "requested_server_count": 100,
+      "repetition": 5,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-b-100n-r5/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1806,
+        "actual_duration_seconds": 2000.265047,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T20:29:57.510000+00:00",
+        "last_sample_utc": "2026-09-23T21:03:16.674000+00:00",
+        "network_bin_origin_epoch": 1790195396.3885753,
+        "measurement_started_at_utc": "2026-09-23T20:29:56.371875710Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 566.6790359020233,
+        "window_start_utc": "2026-09-23T20:29:56.371875+00:00",
+        "window_end_utc": "2026-09-23T20:39:23.050911+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.23357546323381984,
+        "packet_exact_network_MiB": 130.44626808166504
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 4800.625,
+        "network_MiB": 182.37221815636667
+      }
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-c-4n1",
+      "public_id": "pdist-pilinux-20260923-e09-ext01-c-1n-r4",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-c",
+      "requested_server_count": 1,
+      "repetition": 4,
+      "aggregation_source_commit": "65e75862c4be4e87a5c28b8e0b5f68824d752947",
+      "source_fixture_commit": "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+      "binary_hashes": {
+        "aggregation_binary_sha256": "23c2eb89b109913148fc5f4ccddd3221432b9c7a3fdba42759559a70a214add9",
+        "lds_binary_sha256": "9c136676b88de92efb6a1dbb27c96be44a04284a6286b1e417aa727c59e4a9db"
+      },
+      "resource_csv": "Validation/current_20261006/E09/pdist-pilinux-20260923-e09-ext01-c-1n-r4/resource_usage.csv",
+      "coverage": {
+        "sample_count": 1817,
+        "actual_duration_seconds": 2000.055566,
+        "minimum_duration_seconds": 2000,
+        "first_sample_utc": "2026-09-23T21:04:42.328000+00:00",
+        "last_sample_utc": "2026-09-23T21:38:01.281000+00:00",
+        "network_bin_origin_epoch": 1790197481.207689,
+        "measurement_started_at_utc": "2026-09-23T21:04:41.190564910Z"
+      },
+      "acquisition_to_terminal": {
+        "window_seconds": 7.0617101192474365,
+        "window_start_utc": "2026-09-23T21:04:41.190564+00:00",
+        "window_end_utc": "2026-09-23T21:04:48.252274+00:00",
+        "cpu_equivalent_cores_weighted_mean": 0.08944683921781171,
+        "packet_exact_network_MiB": 1.1107463836669922
+      },
+      "expected_full_recording": {
+        "peak_rss_MiB": 131.062,
+        "network_MiB": 1.869121564425327
+      }
+    }
+  ],
+  "E10": [
+    {
+      "run_id": "c16-pi5-20260924-e10-03-b100-r1",
+      "scenario": "B100",
+      "summary": "Validation/current_20261006/E10/c16-pi5-20260924-e10-03-b100-r1/summary_public.json"
+    },
+    {
+      "run_id": "c16-pi5-20260924-e10-03-b100-r2",
+      "scenario": "B100",
+      "summary": "Validation/current_20261006/E10/c16-pi5-20260924-e10-03-b100-r2/summary_public.json"
+    },
+    {
+      "run_id": "c16-pi5-20260924-e10-03-b100-r3",
+      "scenario": "B100",
+      "summary": "Validation/current_20261006/E10/c16-pi5-20260924-e10-03-b100-r3/summary_public.json"
+    },
+    {
+      "run_id": "c16-pi5-20260924-e10-04-f24-r1",
+      "scenario": "F24",
+      "summary": "Validation/current_20261006/E10/c16-pi5-20260924-e10-04-f24-r1/summary_public.json"
+    },
+    {
+      "run_id": "c16-pi5-20260924-e10-04-f24-r2",
+      "scenario": "F24",
+      "summary": "Validation/current_20261006/E10/c16-pi5-20260924-e10-04-f24-r2/summary_public.json"
+    },
+    {
+      "run_id": "c16-pi5-20260924-e10-04-f24-r3",
+      "scenario": "F24",
+      "summary": "Validation/current_20261006/E10/c16-pi5-20260924-e10-04-f24-r3/summary_public.json"
+    }
+  ],
+  "limitations": [
+    "Compact semantic and lifecycle reports are reported outputs from retained audits, not a rerun of full semantic validation.",
+    "Full address spaces, generated rules, source-runtime archives and robot model payloads are excluded.",
+    "No packet captures, private endpoints, credentials, deployment PKI or host-specific runtime copies are distributed.",
+    "E09 numeric calculations use complete unsmoothed recordings. The paper display is 750 s with a 31 s centered display mean and a mean of three runs per source count.",
+    "E10 integration completion is distinct from full trial acceptance. B100 is two accepted trials out of three; all three integrated 100 sources. F24 is three accepted trials.",
+    "No full paper recreation, independent hardware repeatability, industrial reliability or continuous availability is established by this subset."
+  ],
+  "E03_excluded_attempts": [
+    {
+      "run_id": "20260930T095843.823326Z-e03-48168-rev040-eva-r1",
+      "qualified": false,
+      "measurements_sha256": "7eac96e1d72f3dcbad926843cfecd217a45c1787ec81a56be45633fe4bf5584e",
+      "measurements_size_bytes": 3502820,
+      "reason": "Acquisition interrupted by client standby and subsequent connection failures; no successful subset promoted."
+    }
+  ],
+  "E09_run_timing": "Validation/current_20261006/E09/run_timing.csv",
+  "E09_attempt_register": "Validation/current_20261006/E09/attempt_register_public.json"
+}

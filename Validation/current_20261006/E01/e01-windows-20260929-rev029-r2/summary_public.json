@@ -1,0 +1,94 @@
+{
+  "run_id": "e01-windows-20260929-rev029-r2",
+  "trial": 2,
+  "passed": true,
+  "semantic_criteria": {
+    "zero_unresolved_source_paths": true,
+    "zero_unresolved_target_paths": true,
+    "zero_dangling_type_references": true,
+    "required_standardized_types_present": true,
+    "required_standardized_models_present": true,
+    "standardized_type_definitions_remapped": true,
+    "all_rule_path_segments_namespace_qualified": true,
+    "reference_transformation_policy_verified": true,
+    "source_identity_and_merge_policy_valid": true,
+    "rule_sources_match_accepted_sources": true,
+    "executor_projection_matches_rich_rules": true,
+    "machine_vision_two_system_assignment_verified": true,
+    "expected_source_count_reached": true,
+    "every_discovered_source_has_result": true,
+    "every_discovered_source_was_accepted": true,
+    "every_accepted_source_verified_complete": true,
+    "no_source_aggregation_failure": true
+  },
+  "counts": {
+    "sources": 16,
+    "rules": 2756,
+    "executor_rules": 2756,
+    "nodes": 21931,
+    "xml_namespaces_including_zero": 119,
+    "namespace_metadata_entries_including_zero": 16,
+    "standardized_nonzero_model_namespaces": 15,
+    "entry_points": 56,
+    "nodeset_mappings": 15,
+    "node_classes": {
+      "UAObject": 3210,
+      "UAVariable": 16306,
+      "UAMethod": 1304,
+      "UAObjectType": 481,
+      "UAVariableType": 83,
+      "UADataType": 486,
+      "UAReferenceType": 61
+    },
+    "export_skipped_namespace_zero_nodes": 43,
+    "export_candidates_including_skipped": 21974
+  },
+  "domain_table": {
+    "rows": [
+      {
+        "domain": "Robotics",
+        "inst": 4,
+        "rules": 612,
+        "targets": 184
+      },
+      {
+        "domain": "Machine Vision",
+        "inst": 4,
+        "rules": 44,
+        "targets": 18
+      },
+      {
+        "domain": "Additive Manufacturing",
+        "inst": 4,
+        "rules": 1836,
+        "targets": 172
+      },
+      {
+        "domain": "Woodworking",
+        "inst": 4,
+        "rules": 264,
+        "targets": 24
+      }
+    ],
+    "total": {
+      "inst": 16,
+      "rules": 2756,
+      "targets": 398
+    }
+  },
+  "lifecycle_event_counts": {
+    "onboarding_counts": {
+      "started": 16,
+      "completed": 16
+    },
+    "admission_counts": {
+      "policy": 1,
+      "queued": 16,
+      "observation": 12,
+      "started": 16,
+      "finished": 16
+    }
+  },
+  "original_manifest_sha256": "8c5ab43372c3ff1a38be2294928621b420e711d2767402bbd56bc67fbf1c7e2a",
+  "scope": "Three fresh local initializations on one host, with identical emulated models. Full semantic artifacts excluded."
+}

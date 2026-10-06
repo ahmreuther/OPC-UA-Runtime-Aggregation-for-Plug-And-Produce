@@ -1,0 +1,3 @@
+system_id,source_count,source_ids
+001,2,opc.tcp://127.0.0.1:4864/plcm/machine-vision/1|opc.tcp://127.0.0.1:4865/plcm/machine-vision/2
+002,2,opc.tcp://127.0.0.1:4866/plcm/machine-vision/3|opc.tcp://127.0.0.1:4867/plcm/machine-vision/4

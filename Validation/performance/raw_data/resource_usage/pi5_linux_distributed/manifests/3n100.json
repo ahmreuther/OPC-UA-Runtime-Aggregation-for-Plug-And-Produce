@@ -1,0 +1,98 @@
+{
+    "schema":  "ojies.distributed-performance-run/v2",
+    "scope":  "performance",
+    "platform":  "pi5_linux_distributed",
+    "platform_label":  "Raspberry Pi 5 with Linux source host",
+    "matrix_run_id":  "pdist-pilinux-20260730T091252Z-89617",
+    "run_id":  "pdist-pilinux-20260730T091252Z-89617-3n100",
+    "status":  "complete",
+    "promotion_status":  "completed",
+    "requested_server_count":  100,
+    "repetition":  3,
+    "series":  "standard",
+    "requested_duration_seconds":  2000,
+    "sample_count":  2000,
+    "topology":  {
+                     "aggregation_server_host":  "Raspberry Pi 5",
+                     "source_server_host":  "Linux workstation",
+                     "transport":  "physical Ethernet; no loopback OPC UA path",
+                     "address_note":  "Private laboratory addresses were removed from the public subset."
+                 },
+    "orchestration":  {
+                          "matrix_coordinator_host":  "Raspberry Pi 5",
+                          "windows_connection_required_during_measurement":  false,
+                          "pi_resource_sampling":  "autonomous",
+                          "pi_network_capture":  "autonomous",
+                          "linux_source_execution":  "autonomous",
+                          "pi_artifacts_hash_verified_on_linux_after_measurement":  true,
+                          "pi_temporary_run_removed_only_after_verified_offload":  true,
+                          "windows_collection_source":  "Linux matrix archive",
+                          "pi_offload_verified_file_count":  46
+                      },
+    "clock_alignment":  {
+                            "method":  "resource timestamps and packet timestamps share the Pi clock",
+                            "cross_host_clock_alignment_required":  false
+                        },
+    "observed_counts":  {
+                            "source_listening":  100,
+                            "source_listening_with_urdf_payload":  100,
+                            "lds_registered":  100,
+                            "aggregation_started":  100,
+                            "aggregation_terminal":  100,
+                            "complete_phase_triplets":  100
+                        },
+    "measurement_scope":  {
+                              "cpu_memory":  "Pi Aggregation Server plus Pi LDS-ME; Linux source processes excluded",
+                              "network":  "filtered bidirectional physical Ethernet IP bytes captured on Pi eth0",
+                              "network_capture_filter":  "two-host TCP filter; private addresses redacted",
+                              "network_unit":  "MiB/s despite the historical net_in_mbps column name"
+                          },
+    "fixture":  {
+                    "script":  "ojies_agg_server/tools/source_servers.py",
+                    "script_sha256":  "05edf2b213fc6bd3dcf386d6c264bc399dd15cec3e2ee51503a05761cdaa4733",
+                    "source_repository_commit":  "415bc89a7395a1c06b8e796bdca22a1f7e581bf3",
+                    "enriched_urdf":  true,
+                    "robots":  [
+                                   "EVA Automata",
+                                   "Franka Research 3",
+                                   "UR5e"
+                               ],
+                    "distribution":  "round-robin",
+                    "nodesets":  [
+                                     {
+                                         "fixture":  "eva-automata",
+                                         "file":  "eva_generic_urdf_enriched.xml",
+                                         "sha256":  "886eff37cb71ecaea8afd1a6cd3fdbdc16567e44b82ac2595cbf9f38211fac92"
+                                     },
+                                     {
+                                         "fixture":  "franka-research-3",
+                                         "file":  "franka_nodes_urdf_enriched.xml",
+                                         "sha256":  "ccdaefddb1ee21c594833f63c7c9e8b07ef915ed067644ffbc68c85b7ccc9957"
+                                     },
+                                     {
+                                         "fixture":  "ur5e",
+                                         "file":  "ur5e_nodeset_urdf_enriched.xml",
+                                         "sha256":  "6c675392a8102fd40e8b15ed8e8f457e42c040dd1ce0f9bcd8f8b1e58152f233"
+                                     }
+                                 ]
+                },
+    "resource_csv":  "Validation/performance/raw_data/resource_usage/pi5_linux_distributed/3n100.csv",
+    "csv_sha256":  "4a605a78a3a8079a91f4b5a5c472935bab7fcdb9edfdf4176f0bb9812121f430",
+    "aggregation_stdout":  "Validation/performance/raw_data/resource_usage/pi5_linux_distributed/artifacts/3n100/pi/aggregation_server.stdout.log",
+    "aggregation_stdout_sha256":  "02b522ae0a6a7dfff7aa861f4c7cd79ea7d5b718da0925419697cf92e67a870a",
+    "scientific_validation_status":  "validated_within_run_contract",
+    "canonical_performance_data_written":  true,
+    "promoted_at_utc":  "2026-07-31T06:18:40.686694+00:00",
+    "canonical_csv":  "Validation/performance/raw_data/resource_usage/pi5_linux_distributed/3n100.csv",
+    "public_subset":  {
+                          "data_files_modified":  false,
+                          "timing_log_transform":  "Only structured OJIES_PHASE_TIMING records were retained.",
+                          "excluded":  [
+                                           "packet captures",
+                                           "runtime-state snapshots",
+                                           "LDS logs",
+                                           "private keys",
+                                           "host-specific manifests"
+                                       ]
+                      }
+}

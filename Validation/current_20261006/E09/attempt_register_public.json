@@ -1,0 +1,340 @@
+{
+  "attempts": [
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n1",
+      "server_count": 1,
+      "repetition": 1,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n5",
+      "server_count": 5,
+      "repetition": 1,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n10",
+      "server_count": 10,
+      "repetition": 1,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n25",
+      "server_count": 25,
+      "repetition": 1,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n50",
+      "server_count": 50,
+      "repetition": 1,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n75",
+      "server_count": 75,
+      "repetition": 1,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-1n100",
+      "server_count": 100,
+      "repetition": 1,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n1",
+      "server_count": 1,
+      "repetition": 2,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n5",
+      "server_count": 5,
+      "repetition": 2,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n10",
+      "server_count": 10,
+      "repetition": 2,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n25",
+      "server_count": 25,
+      "repetition": 2,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n50",
+      "server_count": 50,
+      "repetition": 2,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n75",
+      "server_count": 75,
+      "repetition": 2,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-2n100",
+      "server_count": 100,
+      "repetition": 2,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n1",
+      "server_count": 1,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n5",
+      "server_count": 5,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n10",
+      "server_count": 10,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n25",
+      "server_count": 25,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n50",
+      "server_count": 50,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n75",
+      "server_count": 75,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923T060000Z-e09-3n100",
+      "server_count": 100,
+      "repetition": 3,
+      "status": "failed_remote",
+      "matrix_run_id": "pdist-pilinux-20260923T060000Z-e09",
+      "selected_for_numeric_analysis": false,
+      "failure_detail_omitted": true
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n10",
+      "server_count": 10,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n25",
+      "server_count": 25,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n50",
+      "server_count": 50,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n10",
+      "server_count": 10,
+      "repetition": 5,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n25",
+      "server_count": 25,
+      "repetition": 5,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n50",
+      "server_count": 50,
+      "repetition": 5,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n10",
+      "server_count": 10,
+      "repetition": 6,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n25",
+      "server_count": 25,
+      "repetition": 6,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n50",
+      "server_count": 50,
+      "repetition": 6,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-a",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n5",
+      "server_count": 5,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n75",
+      "server_count": 75,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n100",
+      "server_count": 100,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n5",
+      "server_count": 5,
+      "repetition": 5,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n75",
+      "server_count": 75,
+      "repetition": 5,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n100",
+      "server_count": 100,
+      "repetition": 5,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-b",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    },
+    {
+      "run_id": "pdist-pilinux-20260923-e09-ext01-c-4n1",
+      "server_count": 1,
+      "repetition": 4,
+      "status": "complete_remote",
+      "matrix_run_id": "pdist-pilinux-20260923-e09-ext01-c",
+      "selected_for_numeric_analysis": true,
+      "failure_detail_omitted": false
+    }
+  ],
+  "documented_attempts": 37,
+  "analyzed_complete_runs": 21,
+  "unsuccessful_original_attempts": 16
+}

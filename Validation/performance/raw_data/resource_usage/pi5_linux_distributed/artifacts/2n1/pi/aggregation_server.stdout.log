@@ -1,0 +1,12 @@
+  [2m   7.095054057s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_namespace_load elapsed_ms=0.081[0m
+  [2m   7.129512610s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_preparation elapsed_ms=34.437[0m
+  [2m   8.760795363s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_rule_generation elapsed_ms=1631.268[0m
+  [2m   8.845542902s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_rule_reload elapsed_ms=84.729[0m
+  [2m   9.053027127s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_connection_test elapsed_ms=207.456[0m
+  [2m   9.160011122s[0m [33m WARN[0m [1;33mopcua::server::aggregation_server::aggregation_server[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=vendor_setup elapsed_ms=106.890[0m
+  [2m   9.160586329s[0m [33m WARN[0m [1;33mopcua::server::aggregation_server::aggregation_server[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=vendor_namespace elapsed_ms=0.567[0m
+  [2m   9.588030322s[0m [33m WARN[0m [1;33mopcua::server::aggregation_server::aggregation_server[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=vendor_type elapsed_ms=427.434[0m
+  [2m   9.829722561s[0m [33m WARN[0m [1;33mopcua::server::aggregation_server::aggregation_server[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=vendor_instance elapsed_ms=241.660[0m
+  [2m   9.829751951s[0m [33m WARN[0m [1;33mopcua::server::aggregation_server::aggregation_server[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=vendor_total elapsed_ms=776.635[0m
+  [2m  10.053346927s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_lower_aggregation_wait elapsed_ms=1000.295[0m
+  [2m  10.053367001s[0m [33m WARN[0m [1;33mroboteach_aggserver[0m[33m: [33mOJIES_PHASE_TIMING server=urn:plcm:robot-server:eva-automata-001 phase=main_total elapsed_ms=2958.405[0m

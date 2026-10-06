@@ -1,0 +1,58 @@
+{
+  "schema": "ojies.e03-read-latency-analysis/v1",
+  "experiment_id": "E03",
+  "claim_id": "C04",
+  "run_id": "20260717T081221.315204Z-e03-53712-eva-table4-r1",
+  "input_scientific_validation_status": "passed",
+  "analysis_status": "complete",
+  "methods": {
+    "latency_unit": "milliseconds",
+    "standard_deviation": "sample standard deviation (n-1 denominator)",
+    "percentile": "linear interpolation at rank (n-1)*p, compatible with numpy method='linear'",
+    "delta": "aggregated latency minus direct latency within each randomized pair"
+  },
+  "expected_samples_per_path": 10000,
+  "observed_rows_per_path": {
+    "direct": 10000,
+    "aggregated": 10000
+  },
+  "valid_rows_per_path": {
+    "direct": 10000,
+    "aggregated": 10000
+  },
+  "invalid_read_count": 0,
+  "paired_value_mismatches": 0,
+  "per_path": {
+    "direct": {
+      "n": 10000,
+      "mean_ms": 6.973816289999999,
+      "median_ms": 6.5338,
+      "sample_std_dev_ms": 4.555821046880656,
+      "p90_ms": 7.437180000000001,
+      "p99_ms": 13.663607000000003,
+      "min_ms": 5.5745,
+      "max_ms": 225.5169
+    },
+    "aggregated": {
+      "n": 10000,
+      "mean_ms": 7.749275410000001,
+      "median_ms": 6.84305,
+      "sample_std_dev_ms": 6.5271249301985765,
+      "p90_ms": 7.74469,
+      "p99_ms": 51.51609900000005,
+      "min_ms": 5.9096,
+      "max_ms": 230.7221
+    }
+  },
+  "paired_overhead": {
+    "n": 10000,
+    "mean_ms": 0.77545912,
+    "median_ms": 0.33565,
+    "sample_std_dev_ms": 7.902518962672748,
+    "p90_ms": 1.2644600000000006,
+    "p99_ms": 44.51288600000001,
+    "min_ms": -217.8971,
+    "max_ms": 223.8947
+  },
+  "input_measurements_sha256": "8bdc6be884417d3da64d290f9906fbb8e225f59a0b94cecb07a0bfac12001550"
+}

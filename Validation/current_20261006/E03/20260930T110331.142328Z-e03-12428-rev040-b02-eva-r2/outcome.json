@@ -1,0 +1,19 @@
+{
+  "scientific_validation_status": "passed",
+  "expected_samples_per_path": 10000,
+  "observed_reads_per_path": {
+    "direct": 10000,
+    "aggregated": 10000
+  },
+  "good_reads_per_path": {
+    "direct": 10000,
+    "aggregated": 10000
+  },
+  "failed_reads_per_path": {
+    "direct": 0,
+    "aggregated": 0
+  },
+  "comparable_pairs": 10000,
+  "value_mismatches": 0,
+  "require_equal_values": true
+}

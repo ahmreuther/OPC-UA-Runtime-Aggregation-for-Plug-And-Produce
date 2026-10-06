@@ -1,0 +1,63 @@
+{
+    "schema":  "ojies.e03-read-latency-run/v1",
+    "experiment_id":  "E03",
+    "claim_id":  "C04",
+    "run_id":  "20260717T081221.315204Z-e03-53712-eva-table4-r1",
+    "runtime_status":  "complete",
+    "scientific_validation_status":  "passed",
+    "started_at_utc":  "2026-07-17T08:12:21.318689Z",
+    "ended_at_utc":  "2026-07-17T08:15:05.630786Z",
+    "operator":  "redacted",
+    "notes":  "Full E03 Table 4 run; stable EVA SpeedOverride Double; direct path EVA_MotionDevice/ParameterSet/SpeedOverride; aggregated path source root urn:plcm:robot-server:eva-automata; node values and namespace indices verified immediately before pilot",
+    "protocol":  {
+                     "samples_per_path":  10000,
+                     "warmup_reads_per_path":  1000,
+                     "pairing":  "one direct and one aggregated Read per pair",
+                     "order":  "balanced AB/BA order, shuffled with recorded seed",
+                     "seed":  16633834443903136632,
+                     "timer":  "time.perf_counter_ns",
+                     "timed_operation":  "asyncua Node.read_data_value only",
+                     "session_policy":  "one persistent session per endpoint",
+                     "security_policy":  "asyncua default (None); anonymous client",
+                     "value_equality_required":  true
+                 },
+    "targets":  {
+                    "direct":  {
+                                   "endpoint":  "opc.tcp://source-host:4840/freeopcua/server/",
+                                   "node_id":  "ns=5;i=6085"
+                               },
+                    "aggregated":  {
+                                       "endpoint":  "opc.tcp://aggregation-host:48400/",
+                                       "node_id":  "ns=37;i=6085"
+                                   }
+                },
+    "client_environment":  {
+                               "hostname":  "redacted",
+                               "platform":  "Windows-11-10.0.26200-SP0",
+                               "python":  "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+                               "asyncua":  "1.1.8",
+                               "aggregation_server_repository":  {
+                                                                     "path":  "redacted",
+                                                                     "commit":  "b799773c32d19356bac8de1643a2a917e36497e6",
+                                                                     "dirty":  false
+                                                                 }
+                           },
+    "artifacts":  {
+                      "staging_run_directory":  "not included in public subset",
+                      "measurements_csv":  "measurements.csv",
+                      "outcome_json":  "outcome.json",
+                      "measurements_sha256":  "8bdc6be884417d3da64d290f9906fbb8e225f59a0b94cecb07a0bfac12001550",
+                      "outcome_sha256":  "31c32f6b53653b18f6672d8dee07b157fd924efb8c92a373d7180e2b5e213396"
+                  },
+    "promotion_status":  "completed",
+    "canonical_run_directory":  "Validation/performance/raw_data/read_latency/20260717T081221.315204Z-e03-53712-eva-table4-r1",
+    "public_transform":  {
+                             "data_files_modified":  false,
+                             "manifest_fields_redacted":  [
+                                                              "operator",
+                                                              "endpoint host addresses",
+                                                              "hostname",
+                                                              "absolute local paths"
+                                                          ]
+                         }
+}

@@ -1,0 +1,37 @@
+{
+  "run_id": "c16-pi5-20260924-e10-04-f24-r2",
+  "scenario": "F24",
+  "recorded_validator_status": "passed_with_explicit_scope_limits",
+  "full_acceptance": true,
+  "requested_sources": 24,
+  "completed_unique_identities": 24,
+  "successful_attempts": 24,
+  "failed_integration_attempts": 1,
+  "queue": {
+    "requested": 24,
+    "attempts": 25,
+    "completed_sources": 24,
+    "failed_attempts": 1,
+    "maximum_recorded_writers": 1,
+    "deferred_snapshot_count": 871,
+    "queued_while_writer_running": 19,
+    "queued_while_failed_writer_running": 0,
+    "maximum_recorded_pending": 4,
+    "maximum_recorded_pending_with_writer": 3
+  },
+  "live_sentinel_status_counts": {
+    "passed": 24
+  },
+  "gates": {
+    "activated_fifth_browse": true,
+    "held_source_seconds": 6.326307876,
+    "late_registered_during_hold": 12,
+    "controlled_release_after_failed_terminal_pi_utc": true,
+    "same_generation_retry": true,
+    "failed_attempt_elapsed_ms": 5132,
+    "failure_terminal_kind": "failed",
+    "all_12_late_sources_completed_after_failure": true,
+    "single_recorded_writer": true
+  },
+  "scope": "One controlled Browse failure and successful retry. The configured outer deadline did not expire; arbitrary-failure recovery is not established."
+}

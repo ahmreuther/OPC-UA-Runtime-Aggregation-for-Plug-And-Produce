@@ -1,0 +1,27 @@
+{
+  "run_id": "c16-pi5-20260924-e10-03-b100-r2",
+  "trial_status_unchanged": "passed_with_explicit_scope_limits",
+  "completed_unique_identities": 100,
+  "failed_integration_attempts": 0,
+  "maximum_recorded_writers": 1,
+  "maximum_recorded_pending": 16,
+  "maximum_recorded_pending_with_writer": 15,
+  "scenario": "B100",
+  "full_acceptance": true,
+  "discovery_failure_count": 0,
+  "registration_groups": [
+    {
+      "group": "initial",
+      "calls": 100,
+      "start_span_ms": 4.83168,
+      "peak_inflight_calls": 100
+    }
+  ],
+  "live_semantics": {
+    "status": "passed",
+    "source_count": 100,
+    "sentinel_count": 100,
+    "offline_semantic_check_completed": true
+  },
+  "scope": "Direct API-call overlap, not simultaneous packets or source mDNS bursts. Third trial rejected after a discovery failure, despite all integrations and live checks."
+}

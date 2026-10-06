@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software or its curated research data, please cite the associated article and this release."
+type: software
+title: "Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug And Produce Systems"
+version: 0.2.0
+doi: 10.5281/zenodo.23190835
+date-released: 2026-10-06
+repository-code: "https://git.rwth-aachen.de/ai-in-production/publications/ieee-ojies-2026"
+authors:
+  - family-names: Reuther
+    given-names: Adrian
+    affiliation: Technical University of Darmstadt
+  - family-names: Bönisch
+    given-names: Niklas
+    affiliation: Technical University of Darmstadt
+  - family-names: Schleich
+    given-names: Benjamin
+    affiliation: Technical University of Darmstadt
+license: PolyForm-Noncommercial-1.0.0
+abstract: >-
+  Research software, public analysis code, and curated evaluation evidence for
+  runtime aggregation and semantic integration of heterogeneous OPC UA
+  information models in Plug And Produce systems.
+keywords:
+  - OPC UA
+  - Plug and Produce
+  - semantic integration
+  - industrial automation
+  - information models

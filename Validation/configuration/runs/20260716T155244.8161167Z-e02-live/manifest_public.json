@@ -1,0 +1,127 @@
+{
+    "schema":  "ojies.public-e02-result/v1",
+    "source_schema":  "ojies.configuration-e02-validation/v1",
+    "experiment_id":  "E02",
+    "run_id":  "20260716T155244.8161167Z-e02-live",
+    "started_at_utc":  "2026-07-16T15:52:44.8161167Z",
+    "ended_at_utc":  "2026-07-16T15:56:15.0172067Z",
+    "runtime_status":  "completed",
+    "artifact_set_status":  "complete_with_operator_visual_attestation",
+    "scientific_validation_status":  "passed",
+    "scope":  {
+                  "joint_functional_runs":  1,
+                  "systems_in_run":  3,
+                  "robots":  [
+                                 "EVA Automata",
+                                 "Franka Research 3",
+                                 "UR5e"
+                             ],
+                  "interpretation":  "The three robots are systems within one joint run, not independent repetitions."
+              },
+    "local_code":  {
+                       "generic_robot_commit":  "1525203b6ab3fad86c6e247d5186a017184e6b41",
+                       "generic_robot_dirty":  false,
+                       "eva_checkout_commit":  "05459ffde3a1011ee8e78f1f694af02408e12977",
+                       "eva_checkout_dirty":  false,
+                       "franka_checkout_commit":  "aec9898b63d8abf406334347c6c3a4a87db6b3b7",
+                       "franka_checkout_dirty":  false,
+                       "ur5e_checkout_commit":  "d0f493a2ddcfee108f4a89c3987b743e988697d9",
+                       "ur5e_checkout_dirty":  false,
+                       "aggregation_server_commit":  "b799773c32d19356bac8de1643a2a917e36497e6",
+                       "webskillcomposition_commit":  null,
+                       "webskillcomposition_note":  "No Git metadata is available at the retained project copy.",
+                       "opcua_to_urdf_sha256":  "7759859542b3a103ffb9b3a8c0744a30e4ab7aee46689317f6821c743b0fbe99",
+                       "test_opcua_to_urdf_sha256":  "765eff370ec11411b54cac46c8735645e18846cdd9bad9a569e1bfa75f5dcfcc",
+                       "bundle_validator_sha256":  "e0d469126f612f6fba08ac1b54ed828c4a9fdcfb57e11a389a2804a10ec7c107"
+                   },
+    "implementation_checks":  {
+                                  "focused_backend_tests":  17,
+                                  "focused_backend_tests_passed":  17,
+                                  "urdf_case_regression":  "Visuals maps to visual; Collisions maps to collision."
+                              },
+    "bundles":  {
+                    "eva":  {
+                                "status":  "passed",
+                                "output_directory":  "Validation/configuration/webskillcomposition/frontend/public/urdf/urn_plcm_robot-server_eva-automata/eva_description",
+                                "robot_name":  "eva_description",
+                                "file_count":  19,
+                                "total_bytes":  6839282,
+                                "urdf_sha256":  "0234131742ea95b536f8e2fed482ac73984052f92c5d4aded599a13de226ba80",
+                                "links":  10,
+                                "joints":  9,
+                                "mesh_references":  18,
+                                "missing_meshes":  0,
+                                "invalid_mesh_xml":  0,
+                                "nonstandard_case_elements":  0
+                            },
+                    "franka":  {
+                                   "status":  "passed",
+                                   "output_directory":  "Validation/configuration/webskillcomposition/frontend/public/urdf/urn_plcm_robot-server_franka-research-3/fr3_description",
+                                   "robot_name":  "fr3",
+                                   "file_count":  21,
+                                   "total_bytes":  27456031,
+                                   "urdf_sha256":  "5c406e1709e4c09a0db24ca7bfb98e6a36b0c6183f93edeffa0fd026e0afacf1",
+                                   "links":  14,
+                                   "joints":  13,
+                                   "mesh_references":  20,
+                                   "missing_meshes":  0,
+                                   "invalid_mesh_xml":  0,
+                                   "nonstandard_case_elements":  0
+                               },
+                    "ur5e":  {
+                                 "status":  "passed",
+                                 "output_directory":  "Validation/configuration/webskillcomposition/frontend/public/urdf/urn_plcm_robot-server_ur5e/ur5e_description",
+                                 "robot_name":  "ur5e",
+                                 "file_count":  15,
+                                 "total_bytes":  9722370,
+                                 "urdf_sha256":  "7f0cb2338449870ae8dcfce606328bde3132e72db6a1cfd8895ba63cf107d244",
+                                 "links":  13,
+                                 "joints":  12,
+                                 "mesh_references":  14,
+                                 "missing_meshes":  0,
+                                 "invalid_mesh_xml":  0,
+                                 "nonstandard_case_elements":  0
+                             },
+                    "total_file_count":  55,
+                    "total_bytes":  44017683,
+                    "total_mesh_references":  52
+                },
+    "frontend":  {
+                     "list_status":  "passed",
+                     "listed_sources":  [
+                                            "urn_plcm_robot-server_eva-automata",
+                                            "urn_plcm_robot-server_franka-research-3",
+                                            "urn_plcm_robot-server_ur5e"
+                                        ],
+                     "http_delivery_status":  "passed",
+                     "http_files_checked":  55,
+                     "http_status_200":  55,
+                     "http_files_matching_local_sha256":  55,
+                     "visible_rendering_status":  "passed_by_operator_attestation",
+                     "screenshot_retained":  false
+                 },
+    "acceptance":  {
+                       "D1_urdf_source_availability":  true,
+                       "D2_aggregated_model_access":  true,
+                       "D3_target_side_extraction":  true,
+                       "D4_source_association":  true,
+                       "D5_configuration_refresh_for_newly_available_bundles":  true,
+                       "D6_frontend_availability":  true,
+                       "D7_model_visualization_operator_confirmed":  true
+                   },
+    "limitations":  [
+                        "This is one joint functional run (n=1), not a repeatability or reliability study.",
+                        "The visible rendering result is retained as an immediate operator attestation; no screenshot was captured.",
+                        "Exact live container image and NodeSet hashes were not read back from the physical hosts.",
+                        "Kinematics, skill configuration, and robot control are outside E02 and are not revalidated by this pass result."
+                    ],
+    "public_subset":  {
+                          "excluded":  [
+                                           "robot URDF and mesh assets",
+                                           "enriched robot NodeSets",
+                                           "laboratory endpoints and serial numbers"
+                                       ],
+                          "exclusion_reason":  "Redistribution rights and infrastructure privacy were not established for these files.",
+                          "target_application_reference":  "Reuther, Boenisch, and Schleich, WebSkillComposition v1.0.0, https://doi.org/10.5281/zenodo.17034716"
+                      }
+}
