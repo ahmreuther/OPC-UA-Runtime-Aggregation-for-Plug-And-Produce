@@ -1,6 +1,8 @@
+use crate::client::session::SessionOperationControl;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
+use std::sync::{atomic::AtomicBool, Arc};
 use std::thread::JoinHandle;
 
 use crate::types::{
@@ -8,25 +10,28 @@ use crate::types::{
     Variant,
 };
 use serde::Serialize;
-use tokio::sync::oneshot;
 use tracing::{instrument, warn};
 
 use crate::server::aggregation_server::error_types::{LowerServerError, TypeAggregationError};
 
 #[derive(Debug)]
 pub struct LowerServerThreading {
-    pub thread_handle: JoinHandle<Result<(), LowerServerError>>,
-    pub remove_lserver_tx: oneshot::Sender<()>,
+    pub thread_handle: Option<JoinHandle<Result<(), LowerServerError>>>,
+    pub operation_control: SessionOperationControl,
+    pub removal_requested: Arc<AtomicBool>,
+    pub cleanup_succeeded: Arc<AtomicBool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LowerServerInfo {
     pub aggregation_finished: bool,
     pub removal_in_progress: bool,
-    /// Terminal error reported by the lower-server background thread. An
-    /// explicit remove keeps this field empty and must not be interpreted as
-    /// successful aggregation.
+    /// Terminal error reported by the lower-server background thread.
+    /// Explicit cancellation may also report an operation timeout; callers must
+    /// use removal_in_progress and joined cleanup, never infer success from absence.
     pub aggregation_error: Option<String>,
+    /// True only after cleanup and the lifecycle worker have been joined.
+    pub cleanup_complete: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -89,7 +94,7 @@ pub enum RuleMergePolicy {
     MergeAtQualifiedTarget,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 /// Mapping rule format. Qualified rules are bound to one source endpoint and
 /// carry stable source/reference identities. Legacy string-only paths remain
 /// readable, but their resolver rejects ambiguous sibling names.
@@ -111,8 +116,10 @@ pub struct InstanceMappingRule {
     pub merge_key: Vec<RuleBrowsePathElement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IncompleteMapping {
+    pub source_server_id: u16,
+    pub source_server_name: String,
     pub rule_id: usize,
     pub source_nid: NodeId,
     pub source_bname: QualifiedName,
@@ -129,9 +136,18 @@ pub struct LowerServer {
     pub postfix: String,
     pub namespace_array: Vec<String>,
     pub folder_nodeid: NodeId,
+    pub(crate) operation_control: Option<SessionOperationControl>,
+    /// Exact set of newly inserted nodes; never recursively delete shared types.
+    pub(crate) created_nodes: Vec<NodeId>,
 }
 
 impl LowerServer {
+    pub(crate) fn check_operation(&self) -> Result<(), crate::types::StatusCode> {
+        self.operation_control
+            .as_ref()
+            .map_or(Ok(()), |control| control.check())
+    }
+
     #[instrument(level = "info", ret)]
     pub fn new(
         name: &str,
@@ -147,6 +163,8 @@ impl LowerServer {
             postfix: postfix.into(),
             namespace_array: Vec::new(),
             folder_nodeid: folder_nodeid.clone(),
+            operation_control: None,
+            created_nodes: Vec::new(),
         };
     }
 }

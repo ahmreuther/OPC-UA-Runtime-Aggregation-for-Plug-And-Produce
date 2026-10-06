@@ -16,6 +16,7 @@
 
 #include <signal.h>
 #include <stdlib.h>
+#include "ojies_lds_limits.h"
 
 static UA_Boolean running = true;
 static void stopHandler(int sig) {
@@ -34,6 +35,20 @@ int main(void) {
         UA_Server_delete(server);
         return EXIT_FAILURE;
     }
+
+    unsigned short channelLimit;
+    if(!ojies_lds_channel_limit(getenv("OJIES_LDS_MAX_SECURE_CHANNELS"), &channelLimit)) {
+        UA_LOG_ERROR(config->logging, UA_LOGCATEGORY_SERVER,
+                     "OJIES_LDS_MAX_SECURE_CHANNELS must be an integer from 1 to 4096");
+        UA_Server_delete(server);
+        return EXIT_FAILURE;
+    }
+    config->maxSecureChannels = (UA_UInt16)channelLimit;
+    if(config->maxSessions > config->maxSecureChannels)
+        config->maxSessions = config->maxSecureChannels;
+    UA_LOG_INFO(config->logging, UA_LOGCATEGORY_SERVER,
+                "LDS capacity: maxSecureChannels=%u, maxSessions=%u",
+                (unsigned)config->maxSecureChannels, (unsigned)config->maxSessions);
 
     // This is an LDS server only. Set the application type to DISCOVERYSERVER.
     // NOTE: This will cause UaExpert to not show this instance in the server list.

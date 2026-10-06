@@ -216,7 +216,7 @@ impl Subscriptions {
                 .values()
                 .map(|v| (v.subscription_id(), v.priority()))
                 .collect();
-            subscription_priority.sort_by(|s1, s2| s1.1.cmp(&s2.1));
+            subscription_priority.sort_by(|s1, s2| s2.1.cmp(&s1.1).then(s1.0.cmp(&s2.0)));
             subscription_priority
                 .iter()
                 .map(|s| s.0)
@@ -272,13 +272,19 @@ impl Subscriptions {
             let more_notifications = self.more_notifications(subscription_id);
 
             // Get a list of available sequence numbers
-            let available_sequence_numbers = self.available_sequence_numbers(subscription_id);
-
             // The notification to be sent is now put into the retransmission queue
-            self.retransmission_queue.insert(
-                (subscription_id, notification_message.sequence_number),
-                notification_message.clone(),
-            );
+            if notification_message
+                .notification_data
+                .as_ref()
+                .is_some_and(|data| !data.is_empty())
+            {
+                self.retransmission_queue.insert(
+                    (subscription_id, notification_message.sequence_number),
+                    notification_message.clone(),
+                );
+            }
+
+            let available_sequence_numbers = self.available_sequence_numbers(subscription_id);
 
             // Enqueue a publish response
             let response = self.make_publish_response(
@@ -502,5 +508,118 @@ impl Subscriptions {
                 .collect::<Vec<_>>();
             self.remove_notifications(&sequence_nrs_to_remove);
         }
+    }
+}
+
+#[cfg(test)]
+mod aggregation_publish_tests {
+    use super::*;
+    use crate::server::aggregation_server::aggregation_server::AggregationServer;
+    use crate::server::diagnostics::ServerDiagnostics;
+    use crate::sync::RwLock;
+    use std::sync::Arc;
+
+    #[test]
+    fn dropping_metrics_snapshot_does_not_remove_live_source_subscription() {
+        let address_space = Arc::new(RwLock::new(AddressSpace::new()));
+        let aggregation = AggregationServer::new(&address_space).unwrap();
+        let database = aggregation.map_db_p.read().connect().unwrap();
+        let source = database
+            .insert_lserver(&"source".into(), &NodeId::new(1, "root"))
+            .unwrap();
+        database.insert_subscription(source, 10, 20).unwrap();
+        let mut subscriptions = Subscriptions::new(10, 1000);
+        subscriptions.insert(
+            20,
+            Subscription::new(
+                Arc::new(RwLock::new(ServerDiagnostics::default())),
+                20,
+                true,
+                100.0,
+                300,
+                100,
+                0,
+                Some(aggregation),
+            ),
+        );
+        drop(subscriptions.metrics());
+        assert_eq!(
+            database
+                .get_lserver_sub_id(source, 20)
+                .unwrap()
+                .lserver_sub_id,
+            10
+        );
+        drop(subscriptions.remove(20));
+        assert!(database.get_lserver_sub_id(source, 20).is_err());
+    }
+
+    #[test]
+    fn keep_alive_is_not_retained_for_republish_and_current_data_is_advertised() {
+        let mut subscriptions = Subscriptions::new(10, 1000);
+        subscriptions.insert(
+            1,
+            Subscription::new(
+                Arc::new(RwLock::new(ServerDiagnostics::default())),
+                1,
+                true,
+                100.0,
+                300,
+                100,
+                0,
+                None,
+            ),
+        );
+        let request = PublishRequestEntry {
+            request_id: 1,
+            request: PublishRequest {
+                request_header: RequestHeader::dummy(),
+                subscription_acknowledgements: None,
+            },
+            results: None,
+        };
+        subscriptions.transmission_queue.push_back((
+            1,
+            request.clone(),
+            NotificationMessage::keep_alive(1, DateTime::now()),
+        ));
+        subscriptions
+            .tick(
+                &chrono::Utc::now(),
+                &AddressSpace::new(),
+                TickReason::TickTimerFired,
+            )
+            .unwrap();
+        assert!(subscriptions.retransmission_queue.is_empty());
+        let data = NotificationMessage::data_change(
+            1,
+            DateTime::now(),
+            vec![MonitoredItemNotification {
+                client_handle: 40,
+                value: DataValue::new_now(42u32),
+            }],
+            vec![],
+        );
+        subscriptions
+            .transmission_queue
+            .push_back((1, request, data));
+        subscriptions
+            .tick(
+                &chrono::Utc::now(),
+                &AddressSpace::new(),
+                TickReason::TickTimerFired,
+            )
+            .unwrap();
+        assert!(subscriptions.retransmission_queue.contains_key(&(1, 1)));
+        let response = subscriptions.publish_response_queue.back().unwrap();
+        let crate::core::supported_message::SupportedMessage::PublishResponse(response) =
+            &response.response
+        else {
+            panic!("expected PublishResponse")
+        };
+        assert_eq!(
+            response.available_sequence_numbers.as_ref().unwrap(),
+            &vec![1]
+        );
     }
 }

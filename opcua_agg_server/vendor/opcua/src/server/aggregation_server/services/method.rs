@@ -13,7 +13,9 @@ use crate::{
     sync::RwLock,
 };
 
-use super::service_delegation::{delegate_service_call, DecidingField, TransformableItem};
+use super::service_delegation::{
+    delegate_service_call, DecidingField, ServiceResultItem, TransformableItem,
+};
 
 impl TransformableItem for CallMethodRequest {
     fn node_ids(&mut self) -> Vec<&mut NodeId> {
@@ -25,6 +27,16 @@ impl TransformableItem for CallMethodRequest {
 }
 
 impl TransformableItem for CallMethodResult {}
+impl ServiceResultItem for CallMethodResult {
+    fn from_status_code(status_code: StatusCode) -> Self {
+        Self {
+            status_code,
+            input_argument_results: None,
+            input_argument_diagnostic_infos: None,
+            output_arguments: None,
+        }
+    }
+}
 
 pub(crate) trait AggServerMethodService {
     fn call_lower_servers(
@@ -109,7 +121,7 @@ impl AggServerMethodService for MethodService {
                     let resp = client.call(call.clone());
                     match resp {
                         Ok(val) => responses.push(val),
-                        Err(sc) => return Err(sc),
+                        Err(sc) => responses.push(CallMethodResult::from_status_code(sc)),
                     }
                 }
                 return Ok(Some(responses));

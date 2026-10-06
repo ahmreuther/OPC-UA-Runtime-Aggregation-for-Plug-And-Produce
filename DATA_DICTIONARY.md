@@ -1,5 +1,18 @@
 # Data dictionary
 
+## Current cohort
+
+`Validation/current_20261006/cohort.json` explicitly selects the current public experiment records. Public result projections retain their original run association and distinguish experiment outcome, integration completion, and full trial acceptance. Unchanged numerical CSVs retain their original field names and units. The current offline verifier documents which fields enter each statistic.
+
+Latencies are measured in nanoseconds in the source records and reported in milliseconds. Performance elapsed time begins at recording start, while phase timing sums instrumented processing phases. These are different windows. Memory is the combined resident set size of the aggregation and discovery processes. Across run error bounds use sample standard deviation. The display limit of 750 seconds is not the numerical resource measurement window.
+
+The current `results/current_20261006/README.md` and export manifest document the selected files and public transformations. Checksums identify the bytes distributed here, not omitted private originals.
+
+## Retained historical field definitions
+
+The following definitions concern the original public E01 to E05 records, which remain separate from the current cohort.
+
+
 ## E01 semantic-integration evidence
 
 - `summary.json`: aggregate counts, rule semantics, type integrity, and acceptance results. The private server host was replaced by loopback.

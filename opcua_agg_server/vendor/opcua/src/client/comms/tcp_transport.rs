@@ -11,7 +11,10 @@ use std::{
     collections::HashMap,
     net::{SocketAddr, ToSocketAddrs},
     result::Result,
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     thread, time,
 };
 
@@ -41,7 +44,10 @@ use crate::client::{
     callbacks::OnSessionClosed,
     comms::transport::Transport,
     message_queue::{self, MessageQueue},
-    session::session_state::{ConnectionState, ConnectionStateMgr, SessionState},
+    session::{
+        session_state::{ConnectionState, ConnectionStateMgr, SessionState},
+        SessionOperationControl,
+    },
 };
 
 //todo move this struct to core module
@@ -264,10 +270,15 @@ pub(crate) struct TcpTransport {
     message_queue: Arc<RwLock<MessageQueue>>,
     /// Tokio runtime
     runtime: Arc<Mutex<tokio::runtime::Runtime>>,
+    operation_control: Option<SessionOperationControl>,
+    request_timeout: time::Duration,
+    stop_requested: Arc<AtomicBool>,
+    worker: Mutex<Option<thread::JoinHandle<()>>>,
 }
 
 impl Drop for TcpTransport {
     fn drop(&mut self) {
+        self.wait_for_disconnect();
         info!("TcpTransport has dropped");
     }
 }
@@ -275,8 +286,6 @@ impl Drop for TcpTransport {
 impl Transport for TcpTransport {}
 
 impl TcpTransport {
-    const WAIT_POLLING_TIMEOUT: u64 = 100;
-
     /// Create a new TCP transport layer for the session
     pub fn new(
         secure_channel: Arc<RwLock<SecureChannel>>,
@@ -303,13 +312,23 @@ impl TcpTransport {
             builder.enable_all().build().unwrap()
         };
 
+        let request_timeout =
+            time::Duration::from_millis(session_state.read().request_timeout() as u64);
         TcpTransport {
             session_state,
             secure_channel,
             connection_state,
             message_queue,
             runtime: Arc::new(Mutex::new(runtime)),
+            operation_control: None,
+            request_timeout,
+            stop_requested: Arc::new(AtomicBool::new(false)),
+            worker: Mutex::new(None),
         }
+    }
+
+    pub(crate) fn set_operation_control(&mut self, control: Option<SessionOperationControl>) {
+        self.operation_control = control;
     }
 
     /// Connects the stream to the specified endpoint
@@ -318,6 +337,12 @@ impl TcpTransport {
             !self.is_connected(),
             "Should not try to connect when already connected"
         );
+        self.wait_for_disconnect();
+        if let Some(control) = &self.operation_control {
+            control.check()?;
+        }
+        let handshake_deadline = time::Instant::now() + self.request_timeout;
+        self.stop_requested.store(false, Ordering::Release);
         let (host, port) = hostname_port_from_url(
             endpoint_url,
             crate::core::constants::DEFAULT_OPC_UA_SERVER_PORT,
@@ -344,6 +369,11 @@ impl TcpTransport {
                 return Err(StatusCode::BadTcpEndpointUrlInvalid);
             }
         };
+        // OS resolver calls are synchronous; the outer onboarding supervisor
+        // provides the safety boundary if a resolver or local callback stalls.
+        if let Some(control) = &self.operation_control {
+            control.check()?;
+        }
         assert_eq!(addr.port(), port);
         let endpoint_url = endpoint_url.to_string();
 
@@ -361,12 +391,17 @@ impl TcpTransport {
             endpoint_url,
             session_state.clone(),
             secure_channel,
-            message_queue,
+            message_queue.clone(),
         );
         let runtime = self.runtime.clone();
-        thread::spawn(move || {
+        let control = self.operation_control.clone();
+        let stop = self.stop_requested.clone();
+        let worker = thread::spawn(move || {
             trace_lock!(runtime).block_on(async move {
-                let conn_result = conn_task.await;
+                let conn_result = tokio::select! {
+                    result = conn_task => result,
+                    status = Self::wait_for_stop(&stop, control.as_ref(), Some(handshake_deadline)) => Err(status),
+                };
                 let mut status = conn_result
                     .as_ref()
                     .err()
@@ -378,30 +413,58 @@ impl TcpTransport {
                     Ok(())
                 });
                 if let Ok((read, write)) = conn_result {
-                    status = Self::spawn_looping_tasks(read, write)
-                        .await
-                        .err()
-                        .unwrap_or(StatusCode::Good);
+                    status = tokio::select! {
+                        result = Self::spawn_looping_tasks(read, write) => result.err().unwrap_or(StatusCode::Good),
+                        status = Self::wait_for_stop(&stop, control.as_ref(), None) => status,
+                    };
                 }
+                // Dropping both socket halves precedes cleanup and wakes pending
+                // requests. Join the worker before reusing its shared state.
+                message_queue.write().clear();
                 connection_state.set_finished(status);
                 trace_write_lock!(session_state).on_session_closed(status);
             });
         });
-        connection_status_receiver
+        *self.worker.lock() = Some(worker);
+        let result = connection_status_receiver
             .recv()
-            .expect("channel should never be dropped here")
+            .unwrap_or(Err(StatusCode::BadConnectionClosed));
+        if result.is_err() {
+            self.wait_for_disconnect();
+        }
+        result
     }
 
     /// Disconnects the stream from the server (if it is connected)
     pub fn wait_for_disconnect(&self) {
-        debug!("Waiting for a disconnect");
-        loop {
-            trace!("Still waiting for a disconnect");
-            if self.connection_state.is_finished() {
-                debug!("Disconnected");
-                break;
+        self.stop_requested.store(true, Ordering::Release);
+        self.message_queue.read().quit();
+        let worker = self.worker.lock().take();
+        if let Some(worker) = worker {
+            // Never leave a socket writer running after an onboarding failure.
+            // The async read/write futures observe stop even if a write is blocked.
+            if worker.join().is_err() {
+                self.connection_state
+                    .set_finished(StatusCode::BadUnexpectedError);
             }
-            thread::sleep(time::Duration::from_millis(Self::WAIT_POLLING_TIMEOUT))
+        }
+    }
+
+    async fn wait_for_stop(
+        stop: &AtomicBool,
+        control: Option<&SessionOperationControl>,
+        deadline: Option<time::Instant>,
+    ) -> StatusCode {
+        loop {
+            if stop.load(Ordering::Acquire) {
+                return StatusCode::BadConnectionClosed;
+            }
+            if control.map_or(false, |control| control.is_cancelled_or_expired())
+                || deadline.map_or(false, |deadline| time::Instant::now() >= deadline)
+            {
+                return StatusCode::BadTimeout;
+            }
+            tokio::time::sleep(time::Duration::from_millis(25)).await;
         }
     }
 

@@ -19,7 +19,7 @@ use crate::{
         callbacks::{OnConnectionStatusChange, OnSessionClosed},
         message_queue::MessageQueue,
         process_unexpected_response,
-        session::{session_debug, session_trace},
+        session::{session_debug, session_trace, SessionOperationControl},
         subscription_state::SubscriptionState,
     },
     core::{
@@ -108,6 +108,7 @@ pub(crate) struct SessionState {
     /// The request timeout is how long the session will wait from sending a request expecting a response
     /// if no response is received the client will terminate.
     request_timeout: u32,
+    operation_control: Option<SessionOperationControl>,
     /// Size of the send buffer
     send_buffer_size: usize,
     /// Size of the
@@ -174,6 +175,7 @@ impl SessionState {
             secure_channel,
             connection_state: ConnectionStateMgr::new(),
             request_timeout,
+            operation_control: None,
             send_buffer_size: Self::SEND_BUFFER_SIZE,
             receive_buffer_size: Self::RECEIVE_BUFFER_SIZE,
             max_message_size,
@@ -188,6 +190,10 @@ impl SessionState {
             connection_status_callback: None,
             message_queue: Arc::new(RwLock::new(MessageQueue::new())),
         }
+    }
+
+    pub(crate) fn set_operation_control(&mut self, control: Option<SessionOperationControl>) {
+        self.operation_control = control;
     }
 
     pub fn id(&self) -> u32 {
@@ -325,12 +331,21 @@ impl SessionState {
         self.wait_for_sync_response(request_handle, request_timeout, receiver)
     }
 
+    pub(crate) fn reset_connection(&mut self) {
+        // Keep the same queue and state shared with TcpTransport. Session IDs
+        // remain available for ActivateSession on the replacement channel.
+        self.subscription_acknowledgements.clear();
+        self.message_queue.write().clear();
+    }
+
     pub(crate) fn reset(&mut self) {
         // Clear tokens, ids etc.
         self.session_id = NodeId::null();
         self.authentication_token = NodeId::null();
+        self.subscription_acknowledgements.clear();
         self.request_handle.reset();
-        self.monitored_item_handle.reset();
+        // Recreated items retain their client handles. Keep allocating new
+        // handles past them when a new source session replaces the old one.
 
         // Clear the message queue
         {
@@ -348,6 +363,9 @@ impl SessionState {
     where
         T: Into<SupportedMessage>,
     {
+        if let Some(control) = &self.operation_control {
+            control.check()?;
+        }
         let request = request.into();
         match request {
             SupportedMessage::OpenSecureChannelRequest(_)
@@ -362,7 +380,7 @@ impl SessionState {
 
         // Enqueue the request
         let request_handle = request.request_handle();
-        self.add_request(request, sender);
+        self.add_request(request, sender)?;
 
         Ok(request_handle)
     }
@@ -385,14 +403,15 @@ impl SessionState {
         if request_handle == 0 {
             panic!("Request handle must be non zero");
         }
-        // Receive messages until the one expected comes back. Publish responses will be consumed
-        // silently.
-        let request_timeout = std::time::Duration::from_millis(request_timeout as u64);
-        receiver.recv_timeout(request_timeout).map_err(|_| {
-            info!("Timeout waiting for response from server");
+        let result = wait_for_response(
+            receiver,
+            std::time::Duration::from_millis(request_timeout as u64),
+            self.operation_control.as_ref(),
+        );
+        if result.is_err() {
             self.request_has_timed_out(request_handle);
-            StatusCode::BadTimeout
-        })
+        }
+        result
     }
 
     fn request_has_timed_out(&self, request_handle: u32) {
@@ -404,7 +423,7 @@ impl SessionState {
         &mut self,
         request: SupportedMessage,
         sender: Option<SyncSender<SupportedMessage>>,
-    ) {
+    ) -> Result<(), StatusCode> {
         let mut message_queue = trace_write_lock!(self.message_queue);
         message_queue.add_request(request, sender)
     }
@@ -599,5 +618,85 @@ impl SessionState {
     /// Returns the next monitored item handle
     pub fn next_monitored_item_handle(&mut self) -> u32 {
         self.monitored_item_handle.next()
+    }
+}
+
+/// Poll only the cancellation flag; the configured service timeout remains an
+/// independent bound even when the onboarding deadline is disarmed.
+fn wait_for_response(
+    receiver: Receiver<SupportedMessage>,
+    timeout: std::time::Duration,
+    control: Option<&SessionOperationControl>,
+) -> Result<SupportedMessage, StatusCode> {
+    use std::{
+        sync::mpsc::RecvTimeoutError,
+        time::{Duration as StdDuration, Instant as StdInstant},
+    };
+    let deadline = StdInstant::now() + timeout;
+    loop {
+        if let Some(control) = control {
+            control.check()?;
+        }
+        let mut remaining = deadline.saturating_duration_since(StdInstant::now());
+        if let Some(budget) = control.and_then(|control| control.remaining()) {
+            remaining = remaining.min(budget);
+        }
+        if remaining.is_zero() {
+            return Err(StatusCode::BadTimeout);
+        }
+        match receiver.recv_timeout(remaining.min(StdDuration::from_millis(25))) {
+            Ok(response) => return Ok(response),
+            Err(RecvTimeoutError::Disconnected) => return Err(StatusCode::BadConnectionClosed),
+            Err(RecvTimeoutError::Timeout) => {}
+        }
+    }
+}
+
+#[cfg(test)]
+mod operation_wait_tests {
+    use super::*;
+    use std::time::{Duration as StdDuration, Instant as StdInstant};
+
+    #[test]
+    fn request_wait_obeys_shorter_operation_budget() {
+        let (_tx, rx) = mpsc::sync_channel(1);
+        let control = SessionOperationControl::new(StdDuration::from_millis(20));
+        let start = StdInstant::now();
+        assert!(matches!(
+            wait_for_response(rx, StdDuration::from_secs(30), Some(&control)),
+            Err(StatusCode::BadTimeout)
+        ));
+        assert!(start.elapsed() < StdDuration::from_secs(2));
+    }
+
+    #[test]
+    fn request_wait_obeys_service_timeout_when_deadline_is_disarmed() {
+        let (_tx, rx) = mpsc::sync_channel(1);
+        let control = SessionOperationControl::new(StdDuration::from_secs(30));
+        control.disarm();
+        let start = StdInstant::now();
+        assert!(matches!(
+            wait_for_response(rx, StdDuration::from_millis(20), Some(&control)),
+            Err(StatusCode::BadTimeout)
+        ));
+        assert!(start.elapsed() < StdDuration::from_secs(2));
+    }
+
+    #[test]
+    fn pending_request_observes_cancellation_from_another_thread() {
+        let (_tx, rx) = mpsc::sync_channel(1);
+        let control = SessionOperationControl::new(StdDuration::from_secs(30));
+        let cancel = control.clone();
+        let worker = std::thread::spawn(move || {
+            std::thread::sleep(StdDuration::from_millis(20));
+            cancel.cancel();
+        });
+        let start = StdInstant::now();
+        assert!(matches!(
+            wait_for_response(rx, StdDuration::from_secs(30), Some(&control)),
+            Err(StatusCode::BadTimeout)
+        ));
+        worker.join().unwrap();
+        assert!(start.elapsed() < StdDuration::from_secs(2));
     }
 }

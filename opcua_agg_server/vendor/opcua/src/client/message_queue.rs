@@ -6,7 +6,7 @@ use std::{collections::HashMap, sync::mpsc::SyncSender};
 
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 
-use crate::core::supported_message::SupportedMessage;
+use crate::{core::supported_message::SupportedMessage, types::StatusCode};
 
 pub(crate) struct MessageQueue {
     /// The requests that are in-flight, defined by their request handle and optionally a sender that will be notified with the response.
@@ -51,9 +51,10 @@ impl MessageQueue {
     }
 
     fn send_message(&self, message: Message) -> bool {
-        let sender = self.sender.as_ref().expect(
-            "MessageQueue::send_message should never be called before make_request_channel",
-        );
+        let Some(sender) = self.sender.as_ref() else {
+            debug!("Cannot send before a transport request channel exists");
+            return false;
+        };
         if sender.is_closed() {
             error!("Send message will fail because sender has been closed");
             false
@@ -72,11 +73,16 @@ impl MessageQueue {
         &mut self,
         request: SupportedMessage,
         sender: Option<SyncSender<SupportedMessage>>,
-    ) {
+    ) -> Result<(), StatusCode> {
         let request_handle = request.request_handle();
         trace!("Sending request {:?} to be sent", request);
         self.inflight_requests.insert(request_handle, sender);
-        let _ = self.send_message(Message::SupportedMessage(request));
+        if self.send_message(Message::SupportedMessage(request)) {
+            Ok(())
+        } else {
+            self.inflight_requests.remove(&request_handle);
+            Err(StatusCode::BadNotConnected)
+        }
     }
 
     pub(crate) fn quit(&self) {
@@ -140,5 +146,43 @@ impl MessageQueue {
             .iter()
             .map(|k| self.responses.remove(k).unwrap())
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod operation_queue_tests {
+    use super::*;
+    use crate::types::{CloseSecureChannelRequest, RequestHeader};
+
+    fn request() -> SupportedMessage {
+        CloseSecureChannelRequest {
+            request_header: RequestHeader {
+                request_handle: 1,
+                ..Default::default()
+            },
+        }
+        .into()
+    }
+
+    #[test]
+    fn uninitialized_queue_can_be_cancelled_without_panicking() {
+        let mut queue = MessageQueue::new();
+        queue.quit();
+        assert_eq!(
+            queue.add_request(request(), None),
+            Err(StatusCode::BadNotConnected)
+        );
+        assert!(queue.inflight_requests.is_empty());
+    }
+
+    #[test]
+    fn closed_transport_does_not_leave_an_inflight_request() {
+        let mut queue = MessageQueue::new();
+        drop(queue.make_request_channel());
+        assert_eq!(
+            queue.add_request(request(), None),
+            Err(StatusCode::BadNotConnected)
+        );
+        assert!(queue.inflight_requests.is_empty());
     }
 }

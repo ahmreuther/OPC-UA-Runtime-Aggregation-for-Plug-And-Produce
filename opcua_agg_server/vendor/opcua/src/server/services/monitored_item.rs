@@ -97,6 +97,26 @@ impl MonitoredItemService {
         if is_empty_option_vec!(request.items_to_modify) {
             self.service_fault(&request.request_header, StatusCode::BadNothingToDo)
         } else {
+            let aggregation_server = server_state.read().aggregation_server();
+            if let Some(aggregation_server) = aggregation_server {
+                if !session
+                    .read()
+                    .subscriptions()
+                    .contains(request.subscription_id)
+                {
+                    return self.service_fault(
+                        &request.request_header,
+                        StatusCode::BadSubscriptionIdInvalid,
+                    );
+                }
+                return self.modify_monitored_items_lservers(
+                    request,
+                    &aggregation_server,
+                    session,
+                    server_state,
+                    address_space,
+                );
+            }
             let server_state = trace_read_lock!(server_state);
             let mut session = trace_write_lock!(session);
             let address_space = trace_read_lock!(address_space);
@@ -129,16 +149,24 @@ impl MonitoredItemService {
     /// Implementation of SetMonitoringMode service. See OPC Unified Architecture, Part 4 5.12.4
     pub fn set_monitoring_mode(
         &self,
-        session: Arc<RwLock<Session>>,
+        session_p: Arc<RwLock<Session>>,
         request: &SetMonitoringModeRequest,
     ) -> SupportedMessage {
         if is_empty_option_vec!(request.monitored_item_ids) {
             self.service_fault(&request.request_header, StatusCode::BadNothingToDo)
         } else {
-            let mut session = trace_write_lock!(session);
+            let mut session = trace_write_lock!(session_p);
             let monitored_item_ids = request.monitored_item_ids.as_ref().unwrap();
             let subscription_id = request.subscription_id;
             if let Some(subscription) = session.subscriptions_mut().get_mut(subscription_id) {
+                if let Some(aggregation_server) = subscription.aggregation_server() {
+                    drop(session);
+                    return self.set_monitoring_mode_lservers(
+                        request,
+                        &aggregation_server,
+                        session_p,
+                    );
+                }
                 let monitoring_mode = request.monitoring_mode;
                 let results = monitored_item_ids
                     .iter()

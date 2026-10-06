@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use crate::client::{client::Client, config::*};
+use crate::client::{client::Client, config::*, session::SessionOperationControl};
 use crate::core::config::Config;
 
 /// The `ClientBuilder` is a builder for producing a [`Client`]. It is an alternative to constructing
@@ -41,12 +41,14 @@ use crate::core::config::Config;
 ///
 pub struct ClientBuilder {
     config: ClientConfig,
+    operation_control: Option<SessionOperationControl>,
 }
 
 impl Default for ClientBuilder {
     fn default() -> Self {
         ClientBuilder {
             config: ClientConfig::default(),
+            operation_control: None,
         }
     }
 }
@@ -64,6 +66,7 @@ impl ClientBuilder {
     {
         Ok(ClientBuilder {
             config: ClientConfig::load(&path.into())?,
+            operation_control: None,
         })
     }
 
@@ -73,10 +76,18 @@ impl ClientBuilder {
     /// [`Client`]: ../client/struct.Client.html
     pub fn client(self) -> Option<Client> {
         if self.is_valid() {
-            Some(Client::new(self.config))
+            let mut client = Client::new(self.config);
+            client.set_operation_control(self.operation_control);
+            Some(client)
         } else {
             None
         }
+    }
+
+    /// Apply one cooperative deadline to all sessions created by this client.
+    pub fn operation_control(mut self, control: SessionOperationControl) -> Self {
+        self.operation_control = Some(control);
+        self
     }
 
     /// Yields a [`ClientConfig`] from the values set by the builder.

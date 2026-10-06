@@ -426,7 +426,24 @@ fn sign_hmac_sha256() {
     assert_eq!(&signature, &expected[..]);
 
     assert!(hash::verify_hmac_sha256(key, data, &expected));
-    assert!(!hash::verify_hmac_sha1(key, &data[1..], &expected));
+    assert!(!hash::verify_hmac_sha256(key, &data[1..], &expected));
+}
+
+#[test]
+fn empty_key_hmac_matches_fixed_nonempty_message_vectors() {
+    let data = b"The quick brown fox jumps over the lazy dog";
+    let mut sha1 = [0u8; SHA1_SIZE];
+    let mut sha256 = [0u8; SHA256_SIZE];
+    hash::hmac_sha1(b"", data, &mut sha1).unwrap();
+    hash::hmac_sha256(b"", data, &mut sha256).unwrap();
+    assert_eq!(
+        &sha1[..],
+        &from_hex("2ba7f707ad5f187c412de3106583c3111d668de8")[..]
+    );
+    assert_eq!(
+        &sha256[..],
+        &from_hex("fb011e6154a19b9a4c767373c305275a5a69e8b68b0b4c9200c383dced19a416")[..]
+    );
 }
 
 #[test]

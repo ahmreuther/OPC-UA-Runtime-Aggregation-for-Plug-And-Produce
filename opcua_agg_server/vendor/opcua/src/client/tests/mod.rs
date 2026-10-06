@@ -79,18 +79,11 @@ pub fn default_sample_config() -> ClientConfig {
 
 #[test]
 fn client_sample_config() {
-    // This test exists to create the samples/client.conf file
-    // This test only exists to dump a sample config
+    let directory = tempdir::TempDir::new("opcua-client-sample-config").unwrap();
+    let path = directory.path().join("client.conf");
     let config = default_sample_config();
-    let mut path = std::env::current_dir().unwrap();
-    path.push("..");
-    path.push("samples");
-    path.push("client.conf");
-    println!("Path is {:?}", path);
-
-    let saved = config.save(&path);
-    println!("Saved = {:?}", saved);
-    assert!(saved.is_ok());
+    config.save(&path).unwrap();
+    assert_eq!(ClientConfig::load::<ClientConfig>(&path).unwrap(), config);
     assert!(config.is_valid());
 }
 

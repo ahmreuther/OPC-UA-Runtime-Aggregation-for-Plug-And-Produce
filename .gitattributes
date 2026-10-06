@@ -9,3 +9,12 @@
 /RESEARCH_DATA_METADATA.md -text
 /RESEARCH_DATA_FILE_MANIFEST.csv -text
 /RESEARCH_DATA_CHECKSUMS_SHA256.txt -text
+
+# Preserve the revised public cohort and result inventories byte for byte.
+/Validation/current_20261006/** -text
+/results/** -text
+/DATA_AVAILABILITY.md -text
+/LICENSE_DATA.md -text
+/RESULTS.md -text
+/Validation/analysis/reproduce_current_release.py -text
+/Validation/analysis/current_20261006/** -text

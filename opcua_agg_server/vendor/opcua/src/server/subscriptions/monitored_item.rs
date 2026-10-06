@@ -163,11 +163,14 @@ impl MonitoredItem {
         timestamps_to_return: TimestampsToReturn,
         request: &MonitoredItemModifyRequest,
     ) -> Result<ExtensionObject, StatusCode> {
-        self.timestamps_to_return = timestamps_to_return;
-        self.filter = FilterType::from_filter(
+        let filter = FilterType::from_filter(
             &request.requested_parameters.filter,
             &server_state.decoding_options(),
         )?;
+        // Reject invalid filters before changing parameters or queued values.
+        let filter_result = Self::validate_filter_value(&filter, address_space)?;
+        self.timestamps_to_return = timestamps_to_return;
+        self.filter = filter;
         self.sampling_interval = Self::sanitize_sampling_interval(
             server_state,
             request.requested_parameters.sampling_interval,
@@ -181,19 +184,26 @@ impl MonitoredItem {
 
         // Shrink / grow the notification queue to the new threshold
         if self.notification_queue.len() > self.queue_size {
-            // Discard old notifications
-            let discard = self.queue_size - self.notification_queue.len();
-            let _ = self.notification_queue.drain(0..discard);
-            // TODO potential edge case with discard oldest behaviour
-            // Shrink the queue
-            self.notification_queue.shrink_to_fit();
+            if self.discard_oldest {
+                let discard = self.notification_queue.len() - self.queue_size;
+                self.notification_queue.drain(..discard);
+            } else {
+                self.notification_queue.truncate(self.queue_size);
+            }
         } else if self.notification_queue.capacity() < self.queue_size {
-            // Reserve space for more elements
-            let extra_capacity = self.queue_size - self.notification_queue.capacity();
-            self.notification_queue.reserve(extra_capacity);
+            self.notification_queue
+                .reserve(self.queue_size - self.notification_queue.len());
         }
-        // Validate the filter, return that from this function
-        self.validate_filter(address_space)
+        // Pending notifications must use the newly assigned client handle too.
+        for notification in &mut self.notification_queue {
+            match notification {
+                Notification::MonitoredItemNotification(value) => {
+                    value.client_handle = self.client_handle
+                }
+                Notification::Event(event) => event.client_handle = self.client_handle,
+            }
+        }
+        Ok(filter_result)
     }
 
     /// Adds or removes other monitored items which will be triggered when this monitored item changes
@@ -213,8 +223,15 @@ impl MonitoredItem {
         &self,
         address_space: &AddressSpace,
     ) -> Result<ExtensionObject, StatusCode> {
+        Self::validate_filter_value(&self.filter, address_space)
+    }
+
+    fn validate_filter_value(
+        filter: &FilterType,
+        address_space: &AddressSpace,
+    ) -> Result<ExtensionObject, StatusCode> {
         // Event filter must be validated
-        let filter_result = if let FilterType::EventFilter(ref event_filter) = self.filter {
+        let filter_result = if let FilterType::EventFilter(event_filter) = filter {
             let filter_result = event_filter::validate(event_filter, address_space)?;
             ExtensionObject::from_encodable(
                 ObjectId::EventFilterResult_Encoding_DefaultBinary,
@@ -599,6 +616,13 @@ impl MonitoredItem {
 
     pub fn set_monitoring_mode(&mut self, monitoring_mode: MonitoringMode) {
         self.monitoring_mode = monitoring_mode;
+        if monitoring_mode == MonitoringMode::Disabled {
+            self.notification_queue.clear();
+            self.queue_overflow = false;
+            // Re-enabling monitoring must report an initial value even if the
+            // source value has not changed while sampling was disabled.
+            self.last_data_value = None;
+        }
     }
 
     pub fn monitoring_mode(&self) -> MonitoringMode {
@@ -622,5 +646,179 @@ impl MonitoredItem {
     #[cfg(test)]
     pub(crate) fn set_discard_oldest(&mut self, discard_oldest: bool) {
         self.discard_oldest = discard_oldest;
+    }
+}
+
+#[cfg(test)]
+mod modification_tests {
+    use super::*;
+    use crate::server::builder::ServerBuilder;
+
+    fn request(
+        client_handle: u32,
+        queue_size: u32,
+        discard_oldest: bool,
+    ) -> MonitoredItemModifyRequest {
+        MonitoredItemModifyRequest {
+            monitored_item_id: 1,
+            requested_parameters: MonitoringParameters {
+                client_handle,
+                sampling_interval: 100.0,
+                filter: ExtensionObject::null(),
+                queue_size,
+                discard_oldest,
+            },
+        }
+    }
+
+    fn item(state: &ServerState) -> MonitoredItem {
+        let mut item = MonitoredItem::new(
+            &chrono::Utc::now(),
+            1,
+            TimestampsToReturn::Both,
+            state,
+            &MonitoredItemCreateRequest {
+                item_to_monitor: NodeId::new(1, "test").into(),
+                monitoring_mode: MonitoringMode::Reporting,
+                requested_parameters: request(10, 4, true).requested_parameters,
+            },
+        )
+        .unwrap();
+        item.notification_queue = (1..=4)
+            .map(|value| {
+                Notification::MonitoredItemNotification(MonitoredItemNotification {
+                    client_handle: 10,
+                    value: DataValue::new_now(value as u32),
+                })
+            })
+            .collect();
+        item
+    }
+
+    #[test]
+    fn shrinking_queue_keeps_requested_end_and_updates_pending_handles() {
+        let temp = tempdir::TempDir::new("monitored-item-modify").unwrap();
+        let server = ServerBuilder::new_sample()
+            .pki_dir(temp.path())
+            .server()
+            .unwrap();
+        let state = server.server_state();
+        let state = state.read();
+        for (discard_oldest, expected) in [(true, vec![3u32, 4]), (false, vec![1u32, 2])] {
+            let mut item = item(&state);
+            item.modify(
+                &state,
+                &AddressSpace::new(),
+                TimestampsToReturn::Both,
+                &request(20, 2, discard_oldest),
+            )
+            .unwrap();
+            assert_eq!(item.notification_queue.len(), 2);
+            let actual: Vec<_> = item
+                .notification_queue
+                .iter()
+                .map(|value| {
+                    let Notification::MonitoredItemNotification(value) = value else {
+                        panic!("expected data change")
+                    };
+                    assert_eq!(value.client_handle, 20);
+                    value.value.value.clone().unwrap()
+                })
+                .collect();
+            assert_eq!(
+                actual,
+                expected
+                    .into_iter()
+                    .map(Variant::UInt32)
+                    .collect::<Vec<_>>()
+            );
+        }
+        let mut event_item = item(&state);
+        event_item.notification_queue = VecDeque::from([Notification::Event(EventFieldList {
+            client_handle: 10,
+            event_fields: None,
+        })]);
+        event_item
+            .modify(
+                &state,
+                &AddressSpace::new(),
+                TimestampsToReturn::Both,
+                &request(20, 2, true),
+            )
+            .unwrap();
+        assert_eq!(
+            event_item.notification_queue[0],
+            Notification::Event(EventFieldList {
+                client_handle: 20,
+                event_fields: None
+            })
+        );
+    }
+
+    #[test]
+    fn rejected_modify_leaves_item_and_queue_unchanged() {
+        let temp = tempdir::TempDir::new("monitored-item-modify-rejected").unwrap();
+        let server = ServerBuilder::new_sample()
+            .pki_dir(temp.path())
+            .server()
+            .unwrap();
+        let state = server.server_state();
+        let state = state.read();
+        let mut item = item(&state);
+        let original = item.clone();
+        let mut invalid = request(20, 1, false);
+        invalid.requested_parameters.filter.node_id = NodeId::new(1, "unsupported-filter");
+        assert!(item
+            .modify(
+                &state,
+                &AddressSpace::new(),
+                TimestampsToReturn::Neither,
+                &invalid
+            )
+            .is_err());
+        assert_eq!(item, original);
+    }
+
+    #[test]
+    fn disabling_clears_pending_values_and_resume_samples_initial_value() {
+        let temp = tempdir::TempDir::new("monitored-item-disable").unwrap();
+        let server = ServerBuilder::new_sample()
+            .pki_dir(temp.path())
+            .server()
+            .unwrap();
+        let state = server.server_state();
+        let state = state.read();
+        let mut address_space = AddressSpace::new();
+        let namespace = address_space
+            .register_namespace("urn:test:monitoring-mode")
+            .unwrap();
+        let node_id = NodeId::new(namespace, "value");
+        crate::server::prelude::VariableBuilder::new(&node_id, "value", "value")
+            .data_type(DataTypeId::UInt32)
+            .value(4u32)
+            .insert(&mut address_space);
+        let mut item = item(&state);
+        item.item_to_monitor = node_id.into();
+        item.last_data_value = Some(DataValue::new_now(4u32));
+        item.queue_overflow = true;
+        item.set_monitoring_mode(MonitoringMode::Disabled);
+        assert!(item.notification_queue.is_empty());
+        assert!(!item.queue_overflow);
+        let now = chrono::Utc::now() + chrono::Duration::seconds(1);
+        assert_eq!(
+            item.tick(&now, &address_space, true, false),
+            TickResult::NoChange
+        );
+        item.set_monitoring_mode(MonitoringMode::Reporting);
+        assert_eq!(
+            item.tick(&now, &address_space, true, false),
+            TickResult::ReportValueChanged
+        );
+        let notifications = item.all_notifications().unwrap();
+        assert_eq!(notifications.len(), 1);
+        let Notification::MonitoredItemNotification(value) = &notifications[0] else {
+            panic!("expected data change")
+        };
+        assert_eq!(value.value.value, Some(Variant::UInt32(4)));
     }
 }

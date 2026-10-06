@@ -42,20 +42,20 @@ class MdnsLdsDiscoveryTests(unittest.TestCase):
         )
 
     def test_brackets_ipv6_address(self):
-        info = FakeServiceInfo(addresses=["2001:db8::1"], port=4840)
+        info = FakeServiceInfo(addresses=["fe80::1"], port=4840)
         self.assertEqual(
             _service_info_to_discovery_url(info),
-            "opc.tcp://[2001:db8::1]:4840",
+            "opc.tcp://[fe80::1]:4840",
         )
 
     def test_prefers_address_on_source_server_network(self):
         info = FakeServiceInfo(
-            addresses=["203.0.113.1", "198.51.100.155"],
+            addresses=["198.51.100.1", "192.0.2.155"],
             port=4840,
         )
         self.assertEqual(
-            _service_info_to_discovery_url(info, "198.51.100.42"),
-            "opc.tcp://198.51.100.155:4840",
+            _service_info_to_discovery_url(info, "192.0.2.42"),
+            "opc.tcp://192.0.2.155:4840",
         )
 
 

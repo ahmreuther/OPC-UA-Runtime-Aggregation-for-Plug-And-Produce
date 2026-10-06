@@ -1,0 +1,1640 @@
+{
+  "schema": "ojies.public-current-reproduction/v1",
+  "as_of": "2026-10-06",
+  "input_hashes_verified": 55,
+  "E01": {
+    "runs": [
+      {
+        "run_id": "e01-windows-20260929-rev029-r1",
+        "domain_totals": {
+          "Inst.": 16,
+          "Rules": 2756,
+          "Targets": 398
+        },
+        "recorded_node_count": 21931,
+        "recorded_semantic_checks_passed": 17
+      },
+      {
+        "run_id": "e01-windows-20260929-rev029-r2",
+        "domain_totals": {
+          "Inst.": 16,
+          "Rules": 2756,
+          "Targets": 398
+        },
+        "recorded_node_count": 21931,
+        "recorded_semantic_checks_passed": 17
+      },
+      {
+        "run_id": "e01-windows-20260929-rev029-r3",
+        "domain_totals": {
+          "Inst.": 16,
+          "Rules": 2756,
+          "Targets": 398
+        },
+        "recorded_node_count": 21931,
+        "recorded_semantic_checks_passed": 17
+      }
+    ],
+    "scope": "Domain-table sums recalculated. Semantic conclusions are retained audit outputs; full source models, rules and address spaces are not included."
+  },
+  "E03": {
+    "runs": [
+      {
+        "schema": "ojies.e03-read-latency-analysis/v1",
+        "experiment_id": "E03",
+        "claim_id": "C04",
+        "run_id": "20260930T105757.188826Z-e03-67688-rev040-b02-eva-r1",
+        "input_scientific_validation_status": "passed",
+        "analysis_status": "complete",
+        "methods": {
+          "latency_unit": "milliseconds",
+          "standard_deviation": "sample standard deviation (n-1 denominator)",
+          "percentile": "linear interpolation at rank (n-1)*p, compatible with numpy method='linear'",
+          "delta": "aggregated latency minus direct latency within each randomized pair"
+        },
+        "expected_samples_per_path": 10000,
+        "observed_rows_per_path": {
+          "direct": 10000,
+          "aggregated": 10000
+        },
+        "valid_rows_per_path": {
+          "direct": 10000,
+          "aggregated": 10000
+        },
+        "invalid_read_count": 0,
+        "paired_value_mismatches": 0,
+        "per_path": {
+          "direct": {
+            "n": 10000,
+            "mean_ms": 3.6826081700000004,
+            "median_ms": 2.2509,
+            "sample_std_dev_ms": 5.55824834069097,
+            "p90_ms": 6.01535,
+            "p99_ms": 24.95500400000001,
+            "min_ms": 1.2766,
+            "max_ms": 221.2492
+          },
+          "aggregated": {
+            "n": 10000,
+            "mean_ms": 4.47556872,
+            "median_ms": 2.7508999999999997,
+            "sample_std_dev_ms": 7.726261745072769,
+            "p90_ms": 6.480500000000001,
+            "p99_ms": 36.97531200000004,
+            "min_ms": 1.7522,
+            "max_ms": 226.7391
+          }
+        },
+        "paired_overhead": {
+          "n": 10000,
+          "mean_ms": 0.79296055,
+          "median_ms": 0.5058,
+          "sample_std_dev_ms": 8.947415696263635,
+          "p90_ms": 3.2018500000000025,
+          "p99_ms": 31.503359000000057,
+          "min_ms": -215.5918,
+          "max_ms": 225.3951
+        }
+      },
+      {
+        "schema": "ojies.e03-read-latency-analysis/v1",
+        "experiment_id": "E03",
+        "claim_id": "C04",
+        "run_id": "20260930T110331.142328Z-e03-12428-rev040-b02-eva-r2",
+        "input_scientific_validation_status": "passed",
+        "analysis_status": "complete",
+        "methods": {
+          "latency_unit": "milliseconds",
+          "standard_deviation": "sample standard deviation (n-1 denominator)",
+          "percentile": "linear interpolation at rank (n-1)*p, compatible with numpy method='linear'",
+          "delta": "aggregated latency minus direct latency within each randomized pair"
+        },
+        "expected_samples_per_path": 10000,
+        "observed_rows_per_path": {
+          "direct": 10000,
+          "aggregated": 10000
+        },
+        "valid_rows_per_path": {
+          "direct": 10000,
+          "aggregated": 10000
+        },
+        "invalid_read_count": 0,
+        "paired_value_mismatches": 0,
+        "per_path": {
+          "direct": {
+            "n": 10000,
+            "mean_ms": 3.5914855799999996,
+            "median_ms": 2.2677,
+            "sample_std_dev_ms": 5.795680527474036,
+            "p90_ms": 5.92911,
+            "p99_ms": 23.051301000000027,
+            "min_ms": 1.2444,
+            "max_ms": 217.0582
+          },
+          "aggregated": {
+            "n": 10000,
+            "mean_ms": 4.20543129,
+            "median_ms": 2.6807499999999997,
+            "sample_std_dev_ms": 7.093757249960564,
+            "p90_ms": 6.18253,
+            "p99_ms": 31.717722000000087,
+            "min_ms": 1.721,
+            "max_ms": 225.6656
+          }
+        },
+        "paired_overhead": {
+          "n": 10000,
+          "mean_ms": 0.6139457100000001,
+          "median_ms": 0.4618,
+          "sample_std_dev_ms": 8.846883633537638,
+          "p90_ms": 2.7342900000000014,
+          "p99_ms": 27.897685000000017,
+          "min_ms": -214.7186,
+          "max_ms": 220.005
+        }
+      },
+      {
+        "schema": "ojies.e03-read-latency-analysis/v1",
+        "experiment_id": "E03",
+        "claim_id": "C04",
+        "run_id": "20260930T110827.375696Z-e03-46104-rev040-b02-eva-r3",
+        "input_scientific_validation_status": "passed",
+        "analysis_status": "complete",
+        "methods": {
+          "latency_unit": "milliseconds",
+          "standard_deviation": "sample standard deviation (n-1 denominator)",
+          "percentile": "linear interpolation at rank (n-1)*p, compatible with numpy method='linear'",
+          "delta": "aggregated latency minus direct latency within each randomized pair"
+        },
+        "expected_samples_per_path": 10000,
+        "observed_rows_per_path": {
+          "direct": 10000,
+          "aggregated": 10000
+        },
+        "valid_rows_per_path": {
+          "direct": 10000,
+          "aggregated": 10000
+        },
+        "invalid_read_count": 0,
+        "paired_value_mismatches": 0,
+        "per_path": {
+          "direct": {
+            "n": 10000,
+            "mean_ms": 3.13566797,
+            "median_ms": 2.027,
+            "sample_std_dev_ms": 4.163534506594829,
+            "p90_ms": 5.41863,
+            "p99_ms": 19.18779700000001,
+            "min_ms": 1.209,
+            "max_ms": 232.9784
+          },
+          "aggregated": {
+            "n": 10000,
+            "mean_ms": 4.15924426,
+            "median_ms": 2.57105,
+            "sample_std_dev_ms": 7.3500674984270855,
+            "p90_ms": 6.659600000000001,
+            "p99_ms": 26.864612,
+            "min_ms": 1.7109,
+            "max_ms": 390.0061
+          }
+        },
+        "paired_overhead": {
+          "n": 10000,
+          "mean_ms": 1.02357629,
+          "median_ms": 0.5433,
+          "sample_std_dev_ms": 7.769011821656558,
+          "p90_ms": 3.1881600000000008,
+          "p99_ms": 22.039555000000032,
+          "min_ms": -225.4776,
+          "max_ms": 385.3407
+        }
+      }
+    ],
+    "excluded_attempts": [
+      {
+        "run_id": "20260930T095843.823326Z-e03-48168-rev040-eva-r1",
+        "qualified": false,
+        "measurements_sha256": "7eac96e1d72f3dcbad926843cfecd217a45c1787ec81a56be45633fe4bf5584e",
+        "measurements_size_bytes": 3502820,
+        "reason": "Acquisition interrupted by client standby and subsequent connection failures; no successful subset promoted."
+      }
+    ],
+    "scope": "Three independent client sessions with fresh aggregation and discovery processes on the same physical setup. The interrupted earlier acquisition is excluded as a whole, not a successful subset."
+  },
+  "E08": {
+    "runs": [
+      {
+        "run_id": "20260921T144548.443427Z-effe2163",
+        "healthy_integrations_completed": 5,
+        "successful_reference_reads": 60,
+        "failed_reference_reads": 0,
+        "separate_process_test_exit_code": 70,
+        "separate_process_test_rejected_further_integration": true
+      },
+      {
+        "run_id": "20260921T144605.568057Z-390dacaf",
+        "healthy_integrations_completed": 5,
+        "successful_reference_reads": 60,
+        "failed_reference_reads": 0,
+        "separate_process_test_exit_code": 70,
+        "separate_process_test_rejected_further_integration": true
+      },
+      {
+        "run_id": "20260921T144626.629388Z-b55c514a",
+        "healthy_integrations_completed": 5,
+        "successful_reference_reads": 61,
+        "failed_reference_reads": 0,
+        "separate_process_test_exit_code": 70,
+        "separate_process_test_rejected_further_integration": true
+      }
+    ],
+    "successful_reference_reads_total": 181,
+    "scope": "Read observations recalculated; integration and process-test outcomes are recorded observations. Local synthetic sources only. Process termination requires external restart and is not continuous availability."
+  },
+  "E09": {
+    "documented_attempts": 37,
+    "analyzed_complete_runs": 21,
+    "other_documented_attempts": 16,
+    "completed_sources_in_selected_runs": 798,
+    "runs": [
+      {
+        "run_id": "pdist-pilinux-20260923T060000Z-e09-1n1",
+        "server_count": 1,
+        "repetition": 1,
+        "samples": 1819,
+        "full_recording_seconds": 2000.555726,
+        "full_recording_peak_rss_MiB": 130.969,
+        "full_recording_network_MiB": 1.868793469528969,
+        "acquisition_to_terminal_seconds": 7.099545955657959,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.09587830561500595,
+        "cpu_covered_whole_interval_seconds": 6.570838999999999,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 1.1109485626220703,
+        "rule_generation_seconds": 0.719693,
+        "aggregation_seconds": 0.714005,
+        "other_processing_seconds": 1.0679810000000003,
+        "total_processing_seconds": 2.501679,
+        "rule_commit_seconds": 0.990779,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 2.523078,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 7.099546
+      },
+      {
+        "run_id": "pdist-pilinux-20260923T060000Z-e09-1n5",
+        "server_count": 5,
+        "repetition": 1,
+        "samples": 1818,
+        "full_recording_seconds": 2000.464604,
+        "full_recording_peak_rss_MiB": 350.641,
+        "full_recording_network_MiB": 10.259869590583481,
+        "acquisition_to_terminal_seconds": 38.207517862319946,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.1177513480806231,
+        "cpu_covered_whole_interval_seconds": 37.281969000000004,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 6.617242813110352,
+        "rule_generation_seconds": 5.4992540000000005,
+        "aggregation_seconds": 3.89114,
+        "other_processing_seconds": 7.204965000000001,
+        "total_processing_seconds": 16.595359000000002,
+        "rule_commit_seconds": 6.7599,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 24.789675,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 38.207518
+      },
+      {
+        "run_id": "pdist-pilinux-20260923T060000Z-e09-1n75",
+        "server_count": 75,
+        "repetition": 1,
+        "samples": 1813,
+        "full_recording_seconds": 2000.767111,
+        "full_recording_peak_rss_MiB": 3945.75,
+        "full_recording_network_MiB": 140.7934379721493,
+        "acquisition_to_terminal_seconds": 413.91086983680725,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.22008743301371061,
+        "cpu_covered_whole_interval_seconds": 412.972203,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 97.60612392425537,
+        "rule_generation_seconds": 81.580793,
+        "aggregation_seconds": 67.409773,
+        "other_processing_seconds": 92.56801100000001,
+        "total_processing_seconds": 241.558577,
+        "rule_commit_seconds": 86.180975,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 246.015398,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 413.91087
+      },
+      {
+        "run_id": "pdist-pilinux-20260923T060000Z-e09-1n100",
+        "server_count": 100,
+        "repetition": 1,
+        "samples": 1809,
+        "full_recording_seconds": 2000.416946,
+        "full_recording_peak_rss_MiB": 5004.766,
+        "full_recording_network_MiB": 182.8589010124338,
+        "acquisition_to_terminal_seconds": 550.794958114624,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.2513923430933352,
+        "cpu_covered_whole_interval_seconds": 550.295219,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 130.3482904434204,
+        "rule_generation_seconds": 111.395838,
+        "aggregation_seconds": 94.77286,
+        "other_processing_seconds": 123.122982,
+        "total_processing_seconds": 329.29168,
+        "rule_commit_seconds": 114.594416,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 334.658426,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 550.794958
+      },
+      {
+        "run_id": "pdist-pilinux-20260923T060000Z-e09-2n1",
+        "server_count": 1,
+        "repetition": 2,
+        "samples": 1819,
+        "full_recording_seconds": 2000.938846,
+        "full_recording_peak_rss_MiB": 131.156,
+        "full_recording_network_MiB": 1.8695831131850729,
+        "acquisition_to_terminal_seconds": 7.134959936141968,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.09383187347733474,
+        "cpu_covered_whole_interval_seconds": 6.607575,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 1.1121349334716797,
+        "rule_generation_seconds": 0.719226,
+        "aggregation_seconds": 0.683725,
+        "other_processing_seconds": 1.045303,
+        "total_processing_seconds": 2.448254,
+        "rule_commit_seconds": 0.964952,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 2.458002,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 7.13496
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n10",
+        "server_count": 10,
+        "repetition": 4,
+        "samples": 1819,
+        "full_recording_seconds": 2000.947578,
+        "full_recording_peak_rss_MiB": 529.766,
+        "full_recording_network_MiB": 19.89416503924782,
+        "acquisition_to_terminal_seconds": 63.59114098548889,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.12559751392591234,
+        "cpu_covered_whole_interval_seconds": 63.536304,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 12.747593879699707,
+        "rule_generation_seconds": 9.697339,
+        "aggregation_seconds": 7.65201,
+        "other_processing_seconds": 12.274035999999999,
+        "total_processing_seconds": 29.623385,
+        "rule_commit_seconds": 11.459991,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 39.980533,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 63.591141
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n25",
+        "server_count": 25,
+        "repetition": 4,
+        "samples": 1819,
+        "full_recording_seconds": 2000.550584,
+        "full_recording_peak_rss_MiB": 1284.984,
+        "full_recording_network_MiB": 49.16318797433693,
+        "acquisition_to_terminal_seconds": 145.0948839187622,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.15124275805288095,
+        "cpu_covered_whole_interval_seconds": 144.601945,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 32.15043067932129,
+        "rule_generation_seconds": 24.921310000000002,
+        "aggregation_seconds": 19.890917,
+        "other_processing_seconds": 39.671412000000004,
+        "total_processing_seconds": 84.48363900000001,
+        "rule_commit_seconds": 37.619115,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 88.424153,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 145.094884
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-4n50",
+        "server_count": 50,
+        "repetition": 4,
+        "samples": 1817,
+        "full_recording_seconds": 2000.528957,
+        "full_recording_peak_rss_MiB": 3042.125,
+        "full_recording_network_MiB": 96.5557756377385,
+        "acquisition_to_terminal_seconds": 271.1621868610382,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.18716922309192457,
+        "cpu_covered_whole_interval_seconds": 270.877855,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 64.99876689910889,
+        "rule_generation_seconds": 52.260822,
+        "aggregation_seconds": 42.129086,
+        "other_processing_seconds": 62.184200000000004,
+        "total_processing_seconds": 156.574108,
+        "rule_commit_seconds": 58.014053,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 160.152055,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 271.162187
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n10",
+        "server_count": 10,
+        "repetition": 5,
+        "samples": 1820,
+        "full_recording_seconds": 2000.529531,
+        "full_recording_peak_rss_MiB": 530.016,
+        "full_recording_network_MiB": 19.893486019105584,
+        "acquisition_to_terminal_seconds": 64.09859609603882,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.13242370398046088,
+        "cpu_covered_whole_interval_seconds": 62.979667,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 12.74904727935791,
+        "rule_generation_seconds": 10.017889,
+        "aggregation_seconds": 7.752514,
+        "other_processing_seconds": 11.441589000000002,
+        "total_processing_seconds": 29.211992000000002,
+        "rule_commit_seconds": 10.558797,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 39.545272,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 64.098596
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n25",
+        "server_count": 25,
+        "repetition": 5,
+        "samples": 1819,
+        "full_recording_seconds": 2000.721168,
+        "full_recording_peak_rss_MiB": 1380.391,
+        "full_recording_network_MiB": 49.21414468554814,
+        "acquisition_to_terminal_seconds": 139.64465403556824,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.15944273839919593,
+        "cpu_covered_whole_interval_seconds": 139.297672,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 32.14618396759033,
+        "rule_generation_seconds": 25.222053,
+        "aggregation_seconds": 19.98866,
+        "other_processing_seconds": 33.59501900000001,
+        "total_processing_seconds": 78.805732,
+        "rule_commit_seconds": 31.538803,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 82.918128,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 139.644654
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-5n50",
+        "server_count": 50,
+        "repetition": 5,
+        "samples": 1818,
+        "full_recording_seconds": 2001.002027,
+        "full_recording_peak_rss_MiB": 3060.062,
+        "full_recording_network_MiB": 96.45984935548434,
+        "acquisition_to_terminal_seconds": 279.2329649925232,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.18129458140210303,
+        "cpu_covered_whole_interval_seconds": 279.15891799999997,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 65.0158863067627,
+        "rule_generation_seconds": 52.122161,
+        "aggregation_seconds": 42.079907,
+        "other_processing_seconds": 70.41851199999999,
+        "total_processing_seconds": 164.62058,
+        "rule_commit_seconds": 66.278939,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 168.386723,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 279.232965
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n10",
+        "server_count": 10,
+        "repetition": 6,
+        "samples": 1819,
+        "full_recording_seconds": 2001.011585,
+        "full_recording_peak_rss_MiB": 530.109,
+        "full_recording_network_MiB": 19.883255000908214,
+        "acquisition_to_terminal_seconds": 64.72651815414429,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.13240076228401237,
+        "cpu_covered_whole_interval_seconds": 63.82137,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 12.740899085998535,
+        "rule_generation_seconds": 10.169765,
+        "aggregation_seconds": 7.783218,
+        "other_processing_seconds": 14.749282,
+        "total_processing_seconds": 32.702265,
+        "rule_commit_seconds": 13.915437,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 41.106595,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 64.726518
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n25",
+        "server_count": 25,
+        "repetition": 6,
+        "samples": 1819,
+        "full_recording_seconds": 2000.571472,
+        "full_recording_peak_rss_MiB": 1072.141,
+        "full_recording_network_MiB": 49.19143199055687,
+        "acquisition_to_terminal_seconds": 140.80401301383972,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.15799854911053815,
+        "cpu_covered_whole_interval_seconds": 139.93799,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 32.144185066223145,
+        "rule_generation_seconds": 25.44125,
+        "aggregation_seconds": 20.008421,
+        "other_processing_seconds": 33.748794000000004,
+        "total_processing_seconds": 79.198465,
+        "rule_commit_seconds": 31.729164,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 84.265772,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 140.804013
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-a-6n50",
+        "server_count": 50,
+        "repetition": 6,
+        "samples": 1816,
+        "full_recording_seconds": 2000.202426,
+        "full_recording_peak_rss_MiB": 3033.391,
+        "full_recording_network_MiB": 96.44057081994598,
+        "acquisition_to_terminal_seconds": 278.31271505355835,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.18316708413638008,
+        "cpu_covered_whole_interval_seconds": 277.888352,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 65.00533866882324,
+        "rule_generation_seconds": 52.353737,
+        "aggregation_seconds": 41.919044,
+        "other_processing_seconds": 69.648375,
+        "total_processing_seconds": 163.921156,
+        "rule_commit_seconds": 65.441974,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 167.531857,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 278.312715
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n5",
+        "server_count": 5,
+        "repetition": 4,
+        "samples": 1818,
+        "full_recording_seconds": 2000.361917,
+        "full_recording_peak_rss_MiB": 350.656,
+        "full_recording_network_MiB": 10.259469010743361,
+        "acquisition_to_terminal_seconds": 37.48376798629761,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.11991552320760848,
+        "cpu_covered_whole_interval_seconds": 37.276245,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 6.615911483764648,
+        "rule_generation_seconds": 5.305575,
+        "aggregation_seconds": 4.002196,
+        "other_processing_seconds": 8.212493,
+        "total_processing_seconds": 17.520264,
+        "rule_commit_seconds": 7.682508,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 24.765352,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 37.483768
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n75",
+        "server_count": 75,
+        "repetition": 4,
+        "samples": 1811,
+        "full_recording_seconds": 2000.088975,
+        "full_recording_peak_rss_MiB": 4032.922,
+        "full_recording_network_MiB": 140.52562331458088,
+        "acquisition_to_terminal_seconds": 426.7347321510315,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.20588627612441043,
+        "cpu_covered_whole_interval_seconds": 426.206154,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 97.64812278747559,
+        "rule_generation_seconds": 79.770107,
+        "aggregation_seconds": 66.319268,
+        "other_processing_seconds": 109.032858,
+        "total_processing_seconds": 255.122233,
+        "rule_commit_seconds": 102.764086,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 260.836903,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 426.734732
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-b-4n100",
+        "server_count": 100,
+        "repetition": 4,
+        "samples": 1807,
+        "full_recording_seconds": 2000.063673,
+        "full_recording_peak_rss_MiB": 4928.438,
+        "full_recording_network_MiB": 182.28254602871053,
+        "acquisition_to_terminal_seconds": 570.5617458820343,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.2326127460530312,
+        "cpu_covered_whole_interval_seconds": 569.444261,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 130.44953727722168,
+        "rule_generation_seconds": 107.443885,
+        "aggregation_seconds": 92.133909,
+        "other_processing_seconds": 147.11999000000003,
+        "total_processing_seconds": 346.697784,
+        "rule_commit_seconds": 138.804009,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 352.396326,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 570.561746
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n5",
+        "server_count": 5,
+        "repetition": 5,
+        "samples": 1818,
+        "full_recording_seconds": 2000.320144,
+        "full_recording_peak_rss_MiB": 350.344,
+        "full_recording_network_MiB": 10.261826506723443,
+        "acquisition_to_terminal_seconds": 38.49339580535889,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.11146051371531376,
+        "cpu_covered_whole_interval_seconds": 37.681493,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 6.620302200317383,
+        "rule_generation_seconds": 5.200782,
+        "aggregation_seconds": 3.8914720000000003,
+        "other_processing_seconds": 6.749791,
+        "total_processing_seconds": 15.842045,
+        "rule_commit_seconds": 6.299585,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 24.997245,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 38.493396
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n75",
+        "server_count": 75,
+        "repetition": 5,
+        "samples": 1810,
+        "full_recording_seconds": 2000.161121,
+        "full_recording_peak_rss_MiB": 4018.172,
+        "full_recording_network_MiB": 140.43594836119277,
+        "acquisition_to_terminal_seconds": 431.64946603775024,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.2130551970020225,
+        "cpu_covered_whole_interval_seconds": 431.343597,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 97.65769100189209,
+        "rule_generation_seconds": 82.53903,
+        "aggregation_seconds": 67.057242,
+        "other_processing_seconds": 112.29307800000004,
+        "total_processing_seconds": 261.88935000000004,
+        "rule_commit_seconds": 105.938863,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 266.609361,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 431.649466
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-b-5n100",
+        "server_count": 100,
+        "repetition": 5,
+        "samples": 1806,
+        "full_recording_seconds": 2000.265028,
+        "full_recording_peak_rss_MiB": 4800.625,
+        "full_recording_network_MiB": 182.37221815636667,
+        "acquisition_to_terminal_seconds": 566.6790359020233,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.23357546323381984,
+        "cpu_covered_whole_interval_seconds": 566.412241,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 130.44626808166504,
+        "rule_generation_seconds": 107.284175,
+        "aggregation_seconds": 91.608136,
+        "other_processing_seconds": 145.87273999999996,
+        "total_processing_seconds": 344.76505099999997,
+        "rule_commit_seconds": 137.476625,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 350.318964,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 566.679036
+      },
+      {
+        "run_id": "pdist-pilinux-20260923-e09-ext01-c-4n1",
+        "server_count": 1,
+        "repetition": 4,
+        "samples": 1817,
+        "full_recording_seconds": 2000.055544,
+        "full_recording_peak_rss_MiB": 131.062,
+        "full_recording_network_MiB": 1.869121564425327,
+        "acquisition_to_terminal_seconds": 7.0617101192474365,
+        "acquisition_to_terminal_cpu_equivalent_cores_mean": 0.08944683921781171,
+        "cpu_covered_whole_interval_seconds": 6.5961099999999995,
+        "reported_packet_exact_acquisition_to_terminal_network_MiB": 1.1107463836669922,
+        "rule_generation_seconds": 0.7040599999999999,
+        "aggregation_seconds": 0.673649,
+        "other_processing_seconds": 1.1829389999999997,
+        "total_processing_seconds": 2.5606479999999996,
+        "rule_commit_seconds": 1.1069369999999998,
+        "first_onboarding_to_last_completed_pi_wall_seconds": 2.62741,
+        "acquisition_start_to_last_completed_pi_wall_seconds": 7.06171
+      }
+    ],
+    "by_source_count": [
+      {
+        "server_count": 1,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.5167053333334,
+            "sample_std_dev": 0.44294194328525194,
+            "minimum": 2000.055544,
+            "maximum": 2000.938846
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 131.06233333333333,
+            "sample_std_dev": 0.0935004456317425,
+            "minimum": 130.969,
+            "maximum": 131.156
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 1.8691660490464563,
+            "sample_std_dev": 0.0003966969082864739,
+            "minimum": 1.868793469528969,
+            "maximum": 1.8695831131850729
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 7.098738670349121,
+            "sample_std_dev": 0.036631580650416766,
+            "minimum": 7.0617101192474365,
+            "maximum": 7.134959936141968
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.09305233943671747,
+            "sample_std_dev": 0.0032858324660457747,
+            "minimum": 0.08944683921781171,
+            "maximum": 0.09587830561500595
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 6.591508,
+            "sample_std_dev": 0.018795404411717388,
+            "minimum": 6.570838999999999,
+            "maximum": 6.607575
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 1.111276626586914,
+            "sample_std_dev": 0.000750158059208974,
+            "minimum": 1.1107463836669922,
+            "maximum": 1.1121349334716797
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 0.7143263333333333,
+            "sample_std_dev": 0.00889397112280755,
+            "minimum": 0.7040599999999999,
+            "maximum": 0.719693
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 0.6904596666666668,
+            "sample_std_dev": 0.021004011172472088,
+            "minimum": 0.673649,
+            "maximum": 0.714005
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 1.0987410000000002,
+            "sample_std_dev": 0.07379397213865076,
+            "minimum": 1.045303,
+            "maximum": 1.1829389999999997
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 2.503527,
+            "sample_std_dev": 0.05621978421338862,
+            "minimum": 2.448254,
+            "maximum": 2.5606479999999996
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 1.0208893333333333,
+            "sample_std_dev": 0.07563008122654186,
+            "minimum": 0.964952,
+            "maximum": 1.1069369999999998
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 2.536163333333333,
+            "sample_std_dev": 0.08545868637729763,
+            "minimum": 2.458002,
+            "maximum": 2.62741
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 7.098738666666667,
+            "sample_std_dev": 0.036631672980268856,
+            "minimum": 7.06171,
+            "maximum": 7.13496
+          }
+        }
+      },
+      {
+        "server_count": 5,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.3822216666667,
+            "sample_std_dev": 0.07433964296614133,
+            "minimum": 2000.320144,
+            "maximum": 2000.464604
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 350.547,
+            "sample_std_dev": 0.17596306430613126,
+            "minimum": 350.344,
+            "maximum": 350.656
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 10.260388369350094,
+            "sample_std_dev": 0.0012614655685125474,
+            "minimum": 10.259469010743361,
+            "maximum": 10.261826506723443
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 38.06156055132548,
+            "sample_std_dev": 0.5203986315606146,
+            "minimum": 37.48376798629761,
+            "maximum": 38.49339580535889
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.11637579500118178,
+            "sample_std_dev": 0.0043921414007826315,
+            "minimum": 0.11146051371531376,
+            "maximum": 0.11991552320760848
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 37.41323566666667,
+            "sample_std_dev": 0.2323352937229583,
+            "minimum": 37.276245,
+            "maximum": 37.681493
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 6.617818832397461,
+            "sample_std_dev": 0.002251321084597975,
+            "minimum": 6.615911483764648,
+            "maximum": 6.620302200317383
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 5.335203666666668,
+            "sample_std_dev": 0.1514258138902789,
+            "minimum": 5.200782,
+            "maximum": 5.4992540000000005
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 3.928269333333333,
+            "sample_std_dev": 0.06402258655609984,
+            "minimum": 3.89114,
+            "maximum": 4.002196
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 7.389083,
+            "sample_std_dev": 0.7485311373910907,
+            "minimum": 6.749791,
+            "maximum": 8.212493
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 16.652556,
+            "sample_std_dev": 0.8405702680900629,
+            "minimum": 15.842045,
+            "maximum": 17.520264
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 6.913997666666667,
+            "sample_std_dev": 0.7042219636849829,
+            "minimum": 6.299585,
+            "maximum": 7.682508
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 24.850757333333334,
+            "sample_std_dev": 0.127443632427569,
+            "minimum": 24.765352,
+            "maximum": 24.997245
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 38.061560666666665,
+            "sample_std_dev": 0.5203987240197014,
+            "minimum": 37.483768,
+            "maximum": 38.493396
+          }
+        }
+      },
+      {
+        "server_count": 10,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.8295646666666,
+            "sample_std_dev": 0.26180025756740233,
+            "minimum": 2000.529531,
+            "maximum": 2001.011585
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 529.9636666666667,
+            "sample_std_dev": 0.17738752304867492,
+            "minimum": 529.766,
+            "maximum": 530.109
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 19.89030201975387,
+            "sample_std_dev": 0.006112333682538295,
+            "minimum": 19.883255000908214,
+            "maximum": 19.89416503924782
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 64.138751745224,
+            "sample_std_dev": 0.5687527458369744,
+            "minimum": 63.59114098548889,
+            "maximum": 64.72651815414429
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.13014066006346187,
+            "sample_std_dev": 0.003934496689629737,
+            "minimum": 0.12559751392591234,
+            "maximum": 0.13242370398046088
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 63.44578033333334,
+            "sample_std_dev": 0.4280909783239241,
+            "minimum": 62.979667,
+            "maximum": 63.82137
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 12.74584674835205,
+            "sample_std_dev": 0.004345988347305256,
+            "minimum": 12.740899085998535,
+            "maximum": 12.74904727935791
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 9.961664333333333,
+            "sample_std_dev": 0.24117937562182523,
+            "minimum": 9.697339,
+            "maximum": 10.169765
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 7.729247333333333,
+            "sample_std_dev": 0.06862862485387079,
+            "minimum": 7.65201,
+            "maximum": 7.783218
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 12.821635666666666,
+            "sample_std_dev": 1.7204962341610426,
+            "minimum": 11.441589000000002,
+            "maximum": 14.749282
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 30.512547333333334,
+            "sample_std_dev": 1.9074744152665128,
+            "minimum": 29.211992000000002,
+            "maximum": 32.702265
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 11.978074999999999,
+            "sample_std_dev": 1.7372582697146677,
+            "minimum": 10.558797,
+            "maximum": 13.915437
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 40.2108,
+            "sample_std_dev": 0.8057292014374311,
+            "minimum": 39.545272,
+            "maximum": 41.106595
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 64.13875166666666,
+            "sample_std_dev": 0.568752662592741,
+            "minimum": 63.591141,
+            "maximum": 64.726518
+          }
+        }
+      },
+      {
+        "server_count": 25,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.6144080000001,
+            "sample_std_dev": 0.09304488344877121,
+            "minimum": 2000.550584,
+            "maximum": 2000.721168
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 1245.8386666666668,
+            "sample_std_dev": 157.80932629706436,
+            "minimum": 1072.141,
+            "maximum": 1380.391
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 49.18958821681398,
+            "sample_std_dev": 0.025528341712241887,
+            "minimum": 49.16318797433693,
+            "maximum": 49.21414468554814
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 141.8478503227234,
+            "sample_std_dev": 2.8711406601694494,
+            "minimum": 139.64465403556824,
+            "maximum": 145.0948839187622
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.15622801518753834,
+            "sample_std_dev": 0.004377329345543669,
+            "minimum": 0.15124275805288095,
+            "maximum": 0.15944273839919593
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 141.27920233333336,
+            "sample_std_dev": 2.895335197683734,
+            "minimum": 139.297672,
+            "maximum": 144.601945
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 32.146933237711586,
+            "sample_std_dev": 0.003189510155005693,
+            "minimum": 32.144185066223145,
+            "maximum": 32.15043067932129
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 25.194871000000003,
+            "sample_std_dev": 0.2610336122858501,
+            "minimum": 24.921310000000002,
+            "maximum": 25.44125
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 19.962666,
+            "sample_std_dev": 0.06291711635953916,
+            "minimum": 19.890917,
+            "maximum": 20.008421
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 35.67174166666667,
+            "sample_std_dev": 3.46466935928471,
+            "minimum": 33.59501900000001,
+            "maximum": 39.671412000000004
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 80.82927866666667,
+            "sample_std_dev": 3.17085507185402,
+            "minimum": 78.805732,
+            "maximum": 84.48363900000001
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 33.62902733333333,
+            "sample_std_dev": 3.4568278838183906,
+            "minimum": 31.538803,
+            "maximum": 37.619115
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 85.20268433333332,
+            "sample_std_dev": 2.8700925708799634,
+            "minimum": 82.918128,
+            "maximum": 88.424153
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 141.84785033333333,
+            "sample_std_dev": 2.8711407222688257,
+            "minimum": 139.644654,
+            "maximum": 145.094884
+          }
+        }
+      },
+      {
+        "server_count": 50,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.5778033333333,
+            "sample_std_dev": 0.40203222882041517,
+            "minimum": 2000.202426,
+            "maximum": 2001.002027
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 3045.1926666666664,
+            "sample_std_dev": 13.59755471889453,
+            "minimum": 3033.391,
+            "maximum": 3060.062
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 96.48539860438962,
+            "sample_std_dev": 0.06170583927287677,
+            "minimum": 96.44057081994598,
+            "maximum": 96.5557756377385
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 276.2359556357066,
+            "sample_std_dev": 4.418038271862419,
+            "minimum": 271.1621868610382,
+            "maximum": 279.2329649925232
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.18387696287680255,
+            "sample_std_dev": 0.003000966446917592,
+            "minimum": 0.18129458140210303,
+            "maximum": 0.18716922309192457
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 275.97504166666664,
+            "sample_std_dev": 4.459772239276596,
+            "minimum": 270.877855,
+            "maximum": 279.15891799999997
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 65.00666395823161,
+            "sample_std_dev": 0.00863630844842084,
+            "minimum": 64.99876689910889,
+            "maximum": 65.0158863067627
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 52.24557333333333,
+            "sample_std_dev": 0.11653863016327999,
+            "minimum": 52.122161,
+            "maximum": 52.353737
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 42.042679,
+            "sample_std_dev": 0.10985833345267935,
+            "minimum": 41.919044,
+            "maximum": 42.129086
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 67.417029,
+            "sample_std_dev": 4.5480932551040505,
+            "minimum": 62.184200000000004,
+            "maximum": 70.41851199999999
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 161.70528133333332,
+            "sample_std_dev": 4.457466019553858,
+            "minimum": 156.574108,
+            "maximum": 164.62058
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 63.244988666666664,
+            "sample_std_dev": 4.549411342625586,
+            "minimum": 58.014053,
+            "maximum": 66.278939
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 165.35687833333333,
+            "sample_std_dev": 4.52772994091933,
+            "minimum": 160.152055,
+            "maximum": 168.386723
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 276.2359556666667,
+            "sample_std_dev": 4.418038182017131,
+            "minimum": 271.162187,
+            "maximum": 279.232965
+          }
+        }
+      },
+      {
+        "server_count": 75,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.3390689999999,
+            "sample_std_dev": 0.37244627351076975,
+            "minimum": 2000.088975,
+            "maximum": 2000.767111
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 3998.9480000000003,
+            "sample_std_dev": 46.65737913770984,
+            "minimum": 3945.75,
+            "maximum": 4032.922
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 140.58500321597433,
+            "sample_std_dev": 0.18599512091068768,
+            "minimum": 140.43594836119277,
+            "maximum": 140.7934379721493
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 424.09835600852966,
+            "sample_std_dev": 9.158455555856126,
+            "minimum": 413.91086983680725,
+            "maximum": 431.64946603775024
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.21300963538004783,
+            "sample_std_dev": 0.007100688075438691,
+            "minimum": 0.20588627612441043,
+            "maximum": 0.22008743301371061
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 423.507318,
+            "sample_std_dev": 9.478386792697437,
+            "minimum": 412.972203,
+            "maximum": 431.343597
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 97.63731257120769,
+            "sample_std_dev": 0.02743057520025749,
+            "minimum": 97.60612392425537,
+            "maximum": 97.65769100189209
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 81.29664333333334,
+            "sample_std_dev": 1.40616123534335,
+            "minimum": 79.770107,
+            "maximum": 82.53903
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 66.928761,
+            "sample_std_dev": 0.5564897252214138,
+            "minimum": 66.319268,
+            "maximum": 67.409773
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 104.63131566666668,
+            "sample_std_dev": 10.573540004308702,
+            "minimum": 92.56801100000001,
+            "maximum": 112.29307800000004
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 252.85672,
+            "sample_std_dev": 10.35299447306233,
+            "minimum": 241.558577,
+            "maximum": 261.88935000000004
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 98.29464133333333,
+            "sample_std_dev": 10.61015957827366,
+            "minimum": 86.180975,
+            "maximum": 105.938863
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 257.82055399999996,
+            "sample_std_dev": 10.623163322602773,
+            "minimum": 246.015398,
+            "maximum": 266.609361
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 424.09835599999997,
+            "sample_std_dev": 9.1584554277911,
+            "minimum": 413.91087,
+            "maximum": 431.649466
+          }
+        }
+      },
+      {
+        "server_count": 100,
+        "repetitions": 3,
+        "metrics": {
+          "full_recording_seconds": {
+            "n": 3,
+            "mean": 2000.248549,
+            "sample_std_dev": 0.17721207976035208,
+            "minimum": 2000.063673,
+            "maximum": 2000.416946
+          },
+          "full_recording_peak_rss_MiB": {
+            "n": 3,
+            "mean": 4911.276333333333,
+            "sample_std_dev": 103.14688105964862,
+            "minimum": 4800.625,
+            "maximum": 5004.766
+          },
+          "full_recording_network_MiB": {
+            "n": 3,
+            "mean": 182.50455506583702,
+            "sample_std_dev": 0.31013071441213064,
+            "minimum": 182.28254602871053,
+            "maximum": 182.8589010124338
+          },
+          "acquisition_to_terminal_seconds": {
+            "n": 3,
+            "mean": 562.6785799662272,
+            "sample_std_dev": 10.473022984370122,
+            "minimum": 550.794958114624,
+            "maximum": 570.5617458820343
+          },
+          "acquisition_to_terminal_cpu_equivalent_cores_mean": {
+            "n": 3,
+            "mean": 0.2391935174600621,
+            "sample_std_dev": 0.010575453475657548,
+            "minimum": 0.2326127460530312,
+            "maximum": 0.2513923430933352
+          },
+          "cpu_covered_whole_interval_seconds": {
+            "n": 3,
+            "mean": 562.0505736666667,
+            "sample_std_dev": 10.292694439477035,
+            "minimum": 550.295219,
+            "maximum": 569.444261
+          },
+          "reported_packet_exact_acquisition_to_terminal_network_MiB": {
+            "n": 3,
+            "mean": 130.41469860076904,
+            "sample_std_dev": 0.057534376087061814,
+            "minimum": 130.3482904434204,
+            "maximum": 130.44953727722168
+          },
+          "rule_generation_seconds": {
+            "n": 3,
+            "mean": 108.707966,
+            "sample_std_dev": 2.3291347615183184,
+            "minimum": 107.284175,
+            "maximum": 111.395838
+          },
+          "aggregation_seconds": {
+            "n": 3,
+            "mean": 92.83830166666667,
+            "sample_std_dev": 1.6958762545316561,
+            "minimum": 91.608136,
+            "maximum": 94.77286
+          },
+          "other_processing_seconds": {
+            "n": 3,
+            "mean": 138.70523733333332,
+            "sample_std_dev": 13.509031019859323,
+            "minimum": 123.122982,
+            "maximum": 147.11999000000003
+          },
+          "total_processing_seconds": {
+            "n": 3,
+            "mean": 340.251505,
+            "sample_std_dev": 9.540554870409327,
+            "minimum": 329.29168,
+            "maximum": 346.697784
+          },
+          "rule_commit_seconds": {
+            "n": 3,
+            "mean": 130.29168333333334,
+            "sample_std_dev": 13.610423886546098,
+            "minimum": 114.594416,
+            "maximum": 138.804009
+          },
+          "first_onboarding_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 345.7912386666667,
+            "sample_std_dev": 9.697087017402753,
+            "minimum": 334.658426,
+            "maximum": 352.396326
+          },
+          "acquisition_start_to_last_completed_pi_wall_seconds": {
+            "n": 3,
+            "mean": 562.6785799999999,
+            "sample_std_dev": 10.47302311251094,
+            "minimum": 550.794958,
+            "maximum": 570.561746
+          }
+        }
+      }
+    ],
+    "methods": {
+      "standard_deviation": "Sample standard deviation across three separate runs, n-1 denominator.",
+      "CPU": "Combined aggregator and discovery-service CPU-time deltas per actual sampling interval. Acquisition-to-terminal mean weights only complete mapped intervals within that window.",
+      "memory": "Peak combined aggregator/discovery-service RSS over each complete unsmoothed recording, in MiB. Source-host memory is excluded.",
+      "network": "Full-recording integral of the published interval rate. Legacy net_in_mbps is in MiB/s. Packet-exact acquisition-to-terminal network values are reported audited outputs and cannot be rederived without the excluded captures.",
+      "timing": "Phase totals are recalculated across the published per-run timing table. Reconstructing individual phases from private original logs is outside this subset; rule commit is included in other processing, not an additional summand.",
+      "display": "Paper resource graphs show a mean of three runs, a 750 s view and a centered 31 s display mean. This CLI uses complete unsmoothed recordings of at least 2000 s; display cropping/smoothing do not enter the numerical summaries."
+    }
+  },
+  "E10": {
+    "B100": {
+      "trials": 3,
+      "all_sources_integrated_trials": 3,
+      "sources_per_trial": 100,
+      "fully_accepted_trials": 2,
+      "runs": [
+        {
+          "run_id": "c16-pi5-20260924-e10-03-b100-r1",
+          "trial_status_unchanged": "passed_with_explicit_scope_limits",
+          "completed_unique_identities": 100,
+          "failed_integration_attempts": 0,
+          "maximum_recorded_writers": 1,
+          "maximum_recorded_pending": 16,
+          "maximum_recorded_pending_with_writer": 15,
+          "scenario": "B100",
+          "full_acceptance": true,
+          "discovery_failure_count": 0,
+          "registration_groups": [
+            {
+              "group": "initial",
+              "calls": 100,
+              "start_span_ms": 4.22993,
+              "peak_inflight_calls": 100
+            }
+          ],
+          "live_semantics": {
+            "status": "passed",
+            "source_count": 100,
+            "sentinel_count": 100,
+            "offline_semantic_check_completed": true
+          },
+          "scope": "Direct API-call overlap, not simultaneous packets or source mDNS bursts. Third trial rejected after a discovery failure, despite all integrations and live checks."
+        },
+        {
+          "run_id": "c16-pi5-20260924-e10-03-b100-r2",
+          "trial_status_unchanged": "passed_with_explicit_scope_limits",
+          "completed_unique_identities": 100,
+          "failed_integration_attempts": 0,
+          "maximum_recorded_writers": 1,
+          "maximum_recorded_pending": 16,
+          "maximum_recorded_pending_with_writer": 15,
+          "scenario": "B100",
+          "full_acceptance": true,
+          "discovery_failure_count": 0,
+          "registration_groups": [
+            {
+              "group": "initial",
+              "calls": 100,
+              "start_span_ms": 4.83168,
+              "peak_inflight_calls": 100
+            }
+          ],
+          "live_semantics": {
+            "status": "passed",
+            "source_count": 100,
+            "sentinel_count": 100,
+            "offline_semantic_check_completed": true
+          },
+          "scope": "Direct API-call overlap, not simultaneous packets or source mDNS bursts. Third trial rejected after a discovery failure, despite all integrations and live checks."
+        },
+        {
+          "run_id": "c16-pi5-20260924-e10-03-b100-r3",
+          "trial_status_unchanged": "invalid",
+          "completed_unique_identities": 100,
+          "failed_integration_attempts": 0,
+          "maximum_recorded_writers": 1,
+          "maximum_recorded_pending": 16,
+          "maximum_recorded_pending_with_writer": 15,
+          "scenario": "B100",
+          "full_acceptance": false,
+          "discovery_failure_count": 1,
+          "registration_groups": [
+            {
+              "group": "initial",
+              "calls": 100,
+              "start_span_ms": 4.07723,
+              "peak_inflight_calls": 100
+            }
+          ],
+          "live_semantics": {
+            "status": "passed",
+            "source_count": 100,
+            "sentinel_count": 100,
+            "offline_semantic_check_completed": false
+          },
+          "scope": "Direct API-call overlap, not simultaneous packets or source mDNS bursts. Third trial rejected after a discovery failure, despite all integrations and live checks."
+        }
+      ]
+    },
+    "F24": {
+      "trials": 3,
+      "all_sources_integrated_trials": 3,
+      "sources_per_trial": 24,
+      "fully_accepted_trials": 3,
+      "runs": [
+        {
+          "run_id": "c16-pi5-20260924-e10-04-f24-r1",
+          "scenario": "F24",
+          "recorded_validator_status": "passed_with_explicit_scope_limits",
+          "full_acceptance": true,
+          "requested_sources": 24,
+          "completed_unique_identities": 24,
+          "successful_attempts": 24,
+          "failed_integration_attempts": 1,
+          "queue": {
+            "requested": 24,
+            "attempts": 25,
+            "completed_sources": 24,
+            "failed_attempts": 1,
+            "maximum_recorded_writers": 1,
+            "deferred_snapshot_count": 764,
+            "queued_while_writer_running": 18,
+            "queued_while_failed_writer_running": 0,
+            "maximum_recorded_pending": 4,
+            "maximum_recorded_pending_with_writer": 3
+          },
+          "live_sentinel_status_counts": {
+            "passed": 24
+          },
+          "gates": {
+            "activated_fifth_browse": true,
+            "held_source_seconds": 5.431078435,
+            "late_registered_during_hold": 12,
+            "controlled_release_after_failed_terminal_pi_utc": true,
+            "same_generation_retry": true,
+            "failed_attempt_elapsed_ms": 5086,
+            "failure_terminal_kind": "failed",
+            "all_12_late_sources_completed_after_failure": true,
+            "single_recorded_writer": true
+          },
+          "scope": "One controlled Browse failure and successful retry. The configured outer deadline did not expire; arbitrary-failure recovery is not established."
+        },
+        {
+          "run_id": "c16-pi5-20260924-e10-04-f24-r2",
+          "scenario": "F24",
+          "recorded_validator_status": "passed_with_explicit_scope_limits",
+          "full_acceptance": true,
+          "requested_sources": 24,
+          "completed_unique_identities": 24,
+          "successful_attempts": 24,
+          "failed_integration_attempts": 1,
+          "queue": {
+            "requested": 24,
+            "attempts": 25,
+            "completed_sources": 24,
+            "failed_attempts": 1,
+            "maximum_recorded_writers": 1,
+            "deferred_snapshot_count": 871,
+            "queued_while_writer_running": 19,
+            "queued_while_failed_writer_running": 0,
+            "maximum_recorded_pending": 4,
+            "maximum_recorded_pending_with_writer": 3
+          },
+          "live_sentinel_status_counts": {
+            "passed": 24
+          },
+          "gates": {
+            "activated_fifth_browse": true,
+            "held_source_seconds": 6.326307876,
+            "late_registered_during_hold": 12,
+            "controlled_release_after_failed_terminal_pi_utc": true,
+            "same_generation_retry": true,
+            "failed_attempt_elapsed_ms": 5132,
+            "failure_terminal_kind": "failed",
+            "all_12_late_sources_completed_after_failure": true,
+            "single_recorded_writer": true
+          },
+          "scope": "One controlled Browse failure and successful retry. The configured outer deadline did not expire; arbitrary-failure recovery is not established."
+        },
+        {
+          "run_id": "c16-pi5-20260924-e10-04-f24-r3",
+          "scenario": "F24",
+          "recorded_validator_status": "passed_with_explicit_scope_limits",
+          "full_acceptance": true,
+          "requested_sources": 24,
+          "completed_unique_identities": 24,
+          "successful_attempts": 24,
+          "failed_integration_attempts": 1,
+          "queue": {
+            "requested": 24,
+            "attempts": 25,
+            "completed_sources": 24,
+            "failed_attempts": 1,
+            "maximum_recorded_writers": 1,
+            "deferred_snapshot_count": 845,
+            "queued_while_writer_running": 19,
+            "queued_while_failed_writer_running": 0,
+            "maximum_recorded_pending": 4,
+            "maximum_recorded_pending_with_writer": 3
+          },
+          "live_sentinel_status_counts": {
+            "passed": 24
+          },
+          "gates": {
+            "activated_fifth_browse": true,
+            "held_source_seconds": 5.508900742,
+            "late_registered_during_hold": 12,
+            "controlled_release_after_failed_terminal_pi_utc": true,
+            "same_generation_retry": true,
+            "failed_attempt_elapsed_ms": 5054,
+            "failure_terminal_kind": "failed",
+            "all_12_late_sources_completed_after_failure": true,
+            "single_recorded_writer": true
+          },
+          "scope": "One controlled Browse failure and successful retry. The configured outer deadline did not expire; arbitrary-failure recovery is not established."
+        }
+      ]
+    },
+    "scope": "Counts summarized from projected audit reports. The full original validator requires excluded runtime archives. B100 trial 3 integrated all 100 sources but remained rejected after one discovery failure; offline semantic validation did not finish. F24 injected one controlled Browse failure, not expiry of the outer deadline."
+  },
+  "limitations": [
+    "Compact semantic and lifecycle reports are reported outputs from retained audits, not a rerun of full semantic validation.",
+    "Full address spaces, generated rules, source-runtime archives and robot model payloads are excluded.",
+    "No packet captures, private endpoints, credentials, deployment PKI or host-specific runtime copies are distributed.",
+    "E09 numeric calculations use complete unsmoothed recordings. The paper display is 750 s with a 31 s centered display mean and a mean of three runs per source count.",
+    "E10 integration completion is distinct from full trial acceptance. B100 is two accepted trials out of three; all three integrated 100 sources. F24 is three accepted trials.",
+    "No full paper recreation, independent hardware repeatability, industrial reliability or continuous availability is established by this subset."
+  ]
+}

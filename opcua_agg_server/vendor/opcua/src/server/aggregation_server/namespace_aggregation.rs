@@ -23,6 +23,7 @@ pub fn aggregate_namespaces(
     map_db: &MapDatabaseConnection,
     lserver: &mut LowerServer,
 ) -> Result<(), NamespaceAggregationError> {
+    lserver.check_operation()?;
     // Aggregates namespaces by adding a unique postfix to each namespace url.
 
     let origin_ns_array = {
@@ -36,6 +37,7 @@ pub fn aggregate_namespaces(
     };
 
     for (origin_nsid, origin_nsvar) in origin_ns_array.iter().enumerate() {
+        lserver.check_operation()?;
         let Variant::String(origin_ns_uastr) = origin_nsvar else {
             continue;
         };

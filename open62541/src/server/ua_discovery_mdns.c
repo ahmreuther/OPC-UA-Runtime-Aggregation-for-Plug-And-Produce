@@ -893,16 +893,17 @@ UA_DiscoveryManager_sendMulticastMessages(UA_DiscoveryManager *dm) {
     if(!dm->cm || mdnsPrivateData.mdnsSendConnection == 0)
         return;
 
-    struct sockaddr_storage ipStorage;
-    memset(&ipStorage, 0, sizeof(ipStorage));
-    struct sockaddr *ip = (struct sockaddr*)&ipStorage;
-    ip->sa_family = AF_INET; /* IPv4 */
+    /* mdnsd_out accepts either address family. Keep the existing IPv4
+     * selection while reserving sufficient aligned storage for its contract. */
+    struct sockaddr_storage ip;
+    memset(&ip, 0, sizeof(ip));
+    ip.ss_family = AF_INET; /* Ipv4 */
 
     struct message mm;
     memset(&mm, 0, sizeof(struct message));
 
     unsigned short sport = 0;
-    while(mdnsd_out(mdnsPrivateData.mdnsDaemon, &mm, ip, &sport) > 0) {
+    while(mdnsd_out(mdnsPrivateData.mdnsDaemon, &mm, (struct sockaddr *)&ip, &sport) > 0) {
         int len = message_packet_len(&mm);
         char* buf = (char*)message_packet(&mm);
         if(len <= 0)
@@ -1255,7 +1256,8 @@ UA_Discovery_recordExists(UA_DiscoveryManager *dm, const char* fullServiceDomain
     mdns_record_t *r  = mdnsd_get_published(mdnsPrivateData.mdnsDaemon, fullServiceDomain);
     while(r) {
         const mdns_answer_t *data = mdnsd_record_data(r);
-        if(data->type == QTYPE_SRV && (port == 0 || data->srv.port == port))
+        if(strcmp(data->name, fullServiceDomain) == 0 &&
+           data->type == QTYPE_SRV && (port == 0 || data->srv.port == port))
             return true;
         r = mdnsd_record_next(r);
     }
@@ -1501,9 +1503,11 @@ UA_Discovery_removeRecord(UA_DiscoveryManager *dm, const UA_String servername,
     while(r2) {
         const mdns_answer_t *data = mdnsd_record_data(r2);
         mdns_record_t *next = mdnsd_record_next(r2);
-        if((removeTxt && data->type == QTYPE_TXT) ||
-           (removeTxt && data->type == QTYPE_A) ||
-           data->srv.port == port) {
+        /* mdnsd_get_published returns a hash bucket, including collisions. */
+        if(strcmp(data->name, fullServiceDomainBuf) == 0 &&
+           ((removeTxt && data->type == QTYPE_TXT) ||
+            (removeTxt && data->type == QTYPE_A) ||
+            (data->type == QTYPE_SRV && data->srv.port == port))) {
             mdnsd_done(mdnsPrivateData.mdnsDaemon, r2);
         }
         r2 = next;

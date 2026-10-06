@@ -1,0 +1,30 @@
+{
+  "schema": "ojies.e03-read-latency-run/v1",
+  "run_id": "20260930T110827.375696Z-e03-46104-rev040-b02-eva-r3",
+  "protocol": {
+    "samples_per_path": 10000,
+    "warmup_reads_per_path": 1000,
+    "pairing": "one direct and one aggregated Read per pair",
+    "order": "balanced AB/BA order, shuffled with recorded seed",
+    "seed": 303,
+    "timer": "time.perf_counter_ns",
+    "timed_operation": "asyncua Node.read_data_value only",
+    "session_policy": "one persistent session per endpoint",
+    "security_policy": "asyncua default (None); anonymous client",
+    "value_equality_required": true
+  },
+  "scientific_validation_status": "passed",
+  "targets": {
+    "direct": {
+      "role": "source server"
+    },
+    "aggregated": {
+      "role": "aggregation server"
+    }
+  },
+  "public_transform": {
+    "numeric_measurements_modified": false,
+    "fields_omitted": "operator, host identifiers, endpoints, absolute paths and runtime inventories"
+  },
+  "repetition_scope": "Fresh aggregation, discovery and client processes. Same physical sources and network retained."
+}

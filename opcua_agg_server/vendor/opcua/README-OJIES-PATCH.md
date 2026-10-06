@@ -68,13 +68,16 @@ ReadResponse as one chunk even though the peer advertised a 65,535-byte receive
 buffer. The application regression suite covers this exact response size and
 requires multiple `MSG` chunks at or below the negotiated boundary.
 
-## Validation boundary
+## Current lifecycle and service corrections
 
-The validated immutable E01 run
-`Validation/integration/raw_data/semantic_integration/20260713T180111.498542Z-b594fcf0/`
-did not compile this directory. It used the Git dependency at the pinned upstream
-commit and the explicit LDS-ME/`FindServers` path. Because this vendor patch also
-changes the aggregation executor, its successful unit tests and build are not a
-substitute for the complete E01 acceptance protocol. The historical E01 result
-remains valid for its recorded binary; this vendor variant must produce a new
-16-source `VALIDATED` bundle before it can be described as E01-regression-validated.
+The 2026-10-06 publication update also includes cooperative session-operation cancellation and deadlines, joined cleanup of lower-server workers, source-scoped mapping cleanup, transactional mapping updates, and subscription/monitored-item delegation and recreation corrections. The application layers bounded admission and a serial onboarding supervisor over these library operations. A source whose cleanup has not been acknowledged must not be followed by another writer in the same process.
+
+The additional HMAC helper correction normalizes an empty key to its equivalent zero-byte representation before calling the legacy OpenSSL API. It does not change the selected signature algorithm.
+
+New regression fixtures are provided with the application examples and the portable scripts. Their presence is not evidence of complete OPC UA service compliance, industrial security qualification, or unrestricted recovery.
+
+## Validation and provenance boundary
+
+Historical deployment observations above describe their recorded implementation and setup. The earlier E01 run `20260713T180111.498542Z-b594fcf0` used the pinned upstream Git dependency instead of this local directory. Later archived runs have their own source and binary provenance. Consult the release's `EXPERIMENT_VERSIONS.md` and the individual manifests before associating a result with this updated snapshot.
+
+Unit tests and compilation of the exported code check local implementation consistency. They do not reproduce the archived hardware experiments, prove equivalence to the historical E09 binary, or extend the paper's tested service, model, or security scope.

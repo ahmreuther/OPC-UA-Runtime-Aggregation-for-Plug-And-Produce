@@ -124,6 +124,17 @@ impl SubscriptionState {
         }
     }
 
+    pub(crate) fn set_monitoring_mode(
+        &mut self,
+        subscription_id: u32,
+        item_ids: &[u32],
+        mode: crate::types::MonitoringMode,
+    ) {
+        if let Some(subscription) = self.subscriptions.get_mut(&subscription_id) {
+            subscription.set_monitoring_mode(item_ids, mode);
+        }
+    }
+
     pub(crate) fn delete_monitored_items(&mut self, subscription_id: u32, items_to_delete: &[u32]) {
         if let Some(ref mut subscription) = self.subscriptions.get_mut(&subscription_id) {
             subscription.delete_monitored_items(items_to_delete);

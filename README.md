@@ -1,72 +1,54 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21756816.svg)](https://doi.org/10.5281/zenodo.21756816)
-
-
 # Runtime aggregation of heterogeneous OPC UA information models
 
-Research software artifact for the manuscript “Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug & Produce Systems”.
+Software and curated research evidence for “Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug And Produce Systems” by Adrian Reuther, Niklas Bönisch, and Benjamin Schleich.
 
-This self-contained release contains the Rust aggregation server, its local OPC UA dependency snapshot, the open62541 Local Discovery Server source used by the experiments, OPC Foundation NodeSets with provenance, public validation programs, compact result tables, and the curated measurements needed to audit E01–E05.
+This revision, **v0.2.0**, accompanies the revised manuscript. It contains the current aggregation implementation, its bundled OPC UA dependency, the Local Discovery Server source, public utilities, and curated evidence from the revised evaluation. Experimental source revisions are recorded separately. The current source must not be treated as the binary used in every historical experiment.
 
-## Principal results represented here
+## Current evidence
 
-- E01: all 16 emulated sources across four industrial domains were accepted and completed semantic aggregation; all 17 predefined criteria passed.
-- E02: one joint run with three physical robots produced and validated three source-associated URDF bundles. This is a bounded functional demonstration with `n=1`.
-- E03: 10,000 paired reads yielded means of 6.974 ms direct and 7.749 ms through the aggregator, corresponding to a mean paired overhead of 0.775 ms.
-- E04/E05: 21 Raspberry-Pi/Linux runs covered 1, 5, 10, 25, 50, 75, and 100 requested sources with three repetitions each. Every run reached terminal aggregation for the requested count. The 100-source cases are stress observations, not validated operating points.
+- **Structural integration:** three independently initialized local runs, each with 16 emulated sources across Robotics, Machine Vision, Additive Manufacturing, and Woodworking. All 17 semantic criteria passed in each run.
+- **Physical configuration:** one joint run with three robots, validating reconstruction and delivery of source associated URDF bundles. The scope ends at artifact provisioning.
+- **Read latency:** three separately initialized sessions, each with 10,000 direct and aggregated pairs. All 60,000 measured Reads succeeded and all paired values agreed. The physical source servers and network were retained between sessions.
+- **Performance:** 21 complete runs, three at each source population 1, 5, 10, 25, 50, 75, and 100. These are the complete recordings from 37 documented attempts. They evaluate incremental rule maintenance and include final integration and subsequent observation.
+- **Supervision and concurrent registration:** local supervision tests and separate application trials. All three 100 source trials completed integration and passed live semantic checks, but only two passed every trial criterion. All three 24 source interruption trials passed.
 
-See `RESULTS.md` for scope and limitations and `results/` for the compact tables.
+See `RESULTS.md` for interpretation and `Validation/current_20261006/cohort.json` for the explicit current selection. Earlier E01 and E03 to E05 files remain as historical evidence. The original E02 record remains the current physical configuration evidence. Historical and new cohorts are not pooled or silently relabelled.
 
 ## Layout
 
-- `opcua_agg_server/`: Rust server and bundled `opcua` 0.12.0 fork.
-- `open62541/`: source snapshot used to build `discovery_server_lds`.
-- `nodesets/` and `opcua_agg_server/nodesets/`: NodeSets and source/hash records.
-- `tools/`: source-server and integration utilities.
-- `Validation/analysis/`: E03–E05 analysis programs.
-- `Validation/integration/raw_data/`, `Validation/configuration/runs/`, and `Validation/performance/raw_data/`: curated E01–E05 evidence and measurements.
-- `Validation/performance/derived/`: publication-relevant derived numeric tables.
-- `Validation/performance/acquisition/`: portable acquisition and PCAP post-processing utilities.
-- `Validation/configuration/scripts/`: bounded URDF-bundle validator.
-- `results/`: small, publication-relevant derived results only.
-- `RESEARCH_DATA.md`, `DATA_DICTIONARY.md`, `RESEARCH_DATA_FILE_MANIFEST.csv`, and `RESEARCH_DATA_CHECKSUMS_SHA256.txt`: data scope, field definitions, inventory, and integrity records.
+| Path | Purpose |
+| --- | --- |
+| `opcua_agg_server/` | Rust aggregation server and bundled OPC UA fork |
+| `open62541/` | Local Discovery Server source and documented local changes |
+| `nodesets/` | Public OPC Foundation NodeSets and provenance |
+| `tools/`, `scripts/` | Portable utilities and test support |
+| `Validation/current_20261006/` | Selected current numerical records and public result projections |
+| `Validation/analysis/reproduce_current_release.py` | Offline numerical verification of the current public subset |
+| `results/current_20261006/` | Current summaries and export provenance |
+| Other `Validation/` and `results/E01` to `results/E05` paths | Retained historical public evidence and programs |
 
-## Requirements
+`RESEARCH_DATA_FILE_MANIFEST.csv` defines the curated data boundary. `RESEARCH_DATA_CHECKSUMS_SHA256.txt` verifies it. `EXPERIMENT_VERSIONS.md` separates current code, recorded experimental revisions, and public transformations.
 
-The release was verified on Windows with Rust 1.96.0, Python 3.13.3, CMake, Ninja, Visual Studio C++ Build Tools, and Perl. The Rust build also works from other supported platforms when the native dependencies of the bundled crates are available.
+## Build and verify
 
-The bundled dependency tree contains paths longer than 260 characters. Git for Windows users should enable `core.longpaths` for clone and checkout operations.
+Git for Windows users should clone with long path support:
 
-## Build and test
-
-From the repository root in PowerShell:
-
-```powershell
-$env:CARGO_TARGET_DIR = 'C:\tmp\ojies-cargo-target'
-cargo test --release --locked --offline --manifest-path .\opcua_agg_server\Cargo.toml
+```sh
+git -c core.longpaths=true clone https://github.com/ahmreuther/OPC-UA-Runtime-Aggregation-for-Plug-And-Produce.git
 ```
 
-The `--offline` form requires crates already present in the local Cargo cache. A fresh machine must fetch registry dependencies once; the modified `opcua` dependency itself is included.
+Follow `REPRODUCIBILITY.md` for the source build and numerical checks. Verification runs locally and does not require connecting to the laboratory. Running live source servers or reproducing physical experiments is a separate activity.
 
-Build the open62541 Local Discovery Server:
+Runtime configuration, certificates, keys, logs, and generated mapping state do not belong in version control. Start with `opcua_agg_server/config.example.json` for a local configuration.
 
-```powershell
-cmake -S .\open62541 -B C:\tmp\ojies-lds-build -G Ninja `
-  -DUA_BUILD_EXAMPLES=ON `
-  -DUA_ENABLE_DISCOVERY=ON `
-  -DUA_ENABLE_DISCOVERY_MULTICAST=ON
-cmake --build C:\tmp\ojies-lds-build --target discovery_server_lds
-```
+## Citation and archive
 
-For a local server configuration, copy `opcua_agg_server/config.example.json` to `opcua_agg_server/config.json`. Runtime-generated JSON, PKI, logs, and build products are ignored.
+The previous deposited artifact is [version v0.1.0 on Zenodo](https://doi.org/10.5281/zenodo.21756816). It does **not** archive the changes in v0.2.0. The existing [version family](https://doi.org/10.5281/zenodo.21756815) should be continued by depositing this release as a new version of the same Zenodo record. Its DOI is assigned by Zenodo and must be verified after publication.
 
-## Recompute the published tables
+Use the DOI of the exact archived version in the manuscript. A Git push or a mirrored branch alone does not update the existing Zenodo deposit. No DOI for v0.2.0 is invented in this repository. `CITATION.cff` identifies the source version in the meantime.
 
-Clone tag `v0.1.0` into a disposable directory, verify `RESEARCH_DATA_CHECKSUMS_SHA256.txt`, and follow `REPRODUCIBILITY.md`. The required curated measurements are already present at the paths consumed by the analysis programs.
+## Scope and licensing
 
-## Scope and dependencies
+The public evidence supports the explicitly stated checks. It does not reproduce the complete private semantic snapshots or the physical robot deployment. Robot URDFs, meshes, enriched robot NodeSets, experimental packet captures, deployment credentials, private endpoints, and unredacted runtime copies are excluded. E02 refers to the separately archived [WebSkillComposition v1.0.0](https://doi.org/10.5281/zenodo.17034716).
 
-The physical robot models are not redistributed because their third-party redistribution rights were not established. E02 instead retains the bounded validation report and refers to WebSkillComposition v1.0.0 at <https://doi.org/10.5281/zenodo.17034716>.
-
-Project-authored software is source-available under the PolyForm Noncommercial License 1.0.0. Noncommercial use, modification, and redistribution are permitted under that license. Commercial use requires a separate written license from the applicable copyright holder. Because commercial use is restricted, this is not an OSI-approved open-source license.
-
-The root license does not apply to third-party components, compact result data, or the curated research dataset. Those materials remain under their separately identified terms; project-authored data under `results/` and the curated E01–E05 evidence listed in `RESEARCH_DATA_FILE_MANIFEST.csv` are covered by `LICENSE_DATA.md`. See `THIRD_PARTY_NOTICES.md`, `DATA_AVAILABILITY.md`, and `CITATION.cff` for the remaining boundaries.
+Project authored software is source available under PolyForm Noncommercial 1.0.0. Commercial use requires a separate license. This is not an OSI approved open source license. The research data identified in the data manifest are covered by CC BY 4.0. Third party components retain their original terms. See `LICENSE`, `LICENSE_DATA.md`, and `THIRD_PARTY_NOTICES.md`.

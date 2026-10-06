@@ -59,14 +59,11 @@ fn add_sample_vars_to_address_space(address_space: Arc<RwLock<AddressSpace>>) {
 
 #[test]
 pub fn server_config_sample_save() {
-    // This test only exists to dump a sample config
+    let directory = tempdir::TempDir::new("opcua-server-sample-config").unwrap();
+    let path = directory.path().join("server.conf");
     let config = ServerBuilder::new_sample().config();
-    let mut path = std::env::current_dir().unwrap();
-    path.push("..");
-    path.push("samples");
-    path.push("server.conf");
-    println!("Path is {:?}", path);
-    assert!(config.save(&path).is_ok());
+    config.save(&path).unwrap();
+    assert_eq!(ServerConfig::load::<ServerConfig>(&path).unwrap(), config);
 }
 
 #[test]

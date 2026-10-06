@@ -107,7 +107,7 @@ mod builder;
 mod callbacks;
 mod client;
 mod config;
-mod session;
+pub mod session;
 mod session_retry_policy;
 
 /// Process the service result, i.e. where the request "succeeded" but the response
@@ -152,7 +152,7 @@ pub mod prelude {
         callbacks::*,
         client::*,
         config::*,
-        session::{services::*, session::*},
+        session::{services::*, session::*, SessionOperationControl},
         subscription::MonitoredItem,
         subscription_state::SubscriptionState,
     };

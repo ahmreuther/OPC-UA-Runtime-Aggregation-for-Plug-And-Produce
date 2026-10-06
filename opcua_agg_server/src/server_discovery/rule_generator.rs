@@ -133,7 +133,7 @@ pub struct AggregationRule {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-struct ExecutorRule {
+pub(crate) struct ExecutorRule {
     target_node: Vec<QualifiedPathElement>,
     source_node: Vec<QualifiedPathElement>,
     ref_type: Vec<String>,
@@ -143,6 +143,23 @@ struct ExecutorRule {
     reference_type: Option<QualifiedNodeIdentity>,
     merge_policy: String,
     merge_key: Vec<QualifiedPathElement>,
+}
+
+impl ExecutorRule {
+    /// Convert only this new projection, never the accumulated collection.
+    pub(crate) fn to_instance_mapping_rule(
+        &self,
+    ) -> Result<opcua::server::aggregation_server::util_types::InstanceMappingRule, serde_json::Error>
+    {
+        serde_json::from_value(serde_json::to_value(self)?)
+    }
+}
+
+#[derive(Debug)]
+pub struct GeneratedRules {
+    pub created_node_ids: Vec<NodeId>,
+    pub rules: Vec<AggregationRule>,
+    pub shadowed_rules: ShadowedRulePaths,
 }
 
 #[derive(Debug, Clone)]
@@ -195,7 +212,7 @@ impl OrderedRuleSet {
     }
 }
 
-type ShadowedRulePaths = HashMap<Vec<String>, HashSet<Vec<String>>>;
+pub type ShadowedRulePaths = HashMap<Vec<String>, HashSet<Vec<String>>>;
 
 fn is_objects_entry_point(entry_point: &EntryPoint) -> bool {
     entry_point.browse_path.len() == 1 && entry_point.browse_path[0] == "Objects"
@@ -308,11 +325,61 @@ pub fn generate_rules_for_server(
     address_space: &mut AddressSpace,
     rules_path: &str,
 ) -> Result<Vec<NodeId>, Box<dyn std::error::Error>> {
+    generate_rules_for_server_with_control(
+        server_address,
+        all_entry_points,
+        address_space,
+        rules_path,
+        SessionOperationControl::new(Duration::from_secs(600)),
+    )
+}
+
+/// Compatibility path for callers that still request full JSON persistence.
+pub fn generate_rules_for_server_with_control(
+    server_address: &str,
+    all_entry_points: &mut Vec<NodeSetEntryPoints>,
+    address_space: &mut AddressSpace,
+    rules_path: &str,
+    control: SessionOperationControl,
+) -> Result<Vec<NodeId>, Box<dyn std::error::Error>> {
+    let total_started = Instant::now();
+    let generated = generate_rules_delta_for_server_with_control(
+        server_address,
+        all_entry_points,
+        address_space,
+        control.clone(),
+    )?;
+    control.check()?;
+    let persist_started = Instant::now();
+    if !generated.rules.is_empty() || !generated.shadowed_rules.is_empty() {
+        merge_and_save_rules(rules_path, &generated.rules, &generated.shadowed_rules)?;
+    }
+    log_rule_timing(
+        server_address,
+        "rule_merge_persist",
+        persist_started.elapsed(),
+    );
+    log_rule_timing(server_address, "rule_total", total_started.elapsed());
+    Ok(generated.created_node_ids)
+}
+
+/// Derive only the incoming source's rules. The caller owns persistence and rollback.
+pub fn generate_rules_delta_for_server_with_control(
+    server_address: &str,
+    all_entry_points: &mut Vec<NodeSetEntryPoints>,
+    address_space: &mut AddressSpace,
+    control: SessionOperationControl,
+) -> Result<GeneratedRules, Box<dyn std::error::Error>> {
+    control.check()?;
     let total_started = Instant::now();
     let mut created_node_ids = Vec::new();
+    let mut new_rules = OrderedRuleSet::default();
+    let mut shadowed_rules = ShadowedRulePaths::new();
     debug!("\n=== Regelgenerierung fuer Server: {} ===", server_address);
 
     let mut client = ClientBuilder::new()
+        .operation_control(control.clone())
+        .request_timeout(5_000)
         .application_name("Rule Generator")
         .application_uri("urn:RuleGenerator")
         .trust_server_certs(true)
@@ -334,13 +401,7 @@ pub fn generate_rules_for_server(
 
     {
         let traversal_started = Instant::now();
-        let source_namespaces = match read_namespace_array(&session) {
-            Ok(namespaces) => namespaces,
-            Err(e) => {
-                warn!("NamespaceArray konnte nicht gelesen werden: {}", e);
-                Vec::new()
-            }
-        };
+        let source_namespaces = read_namespace_array(&session)?;
         register_rule_target_namespaces(address_space, &source_namespaces)?;
 
         let existing_paths: Vec<Vec<String>> = all_entry_points
@@ -360,9 +421,6 @@ pub fn generate_rules_for_server(
                     .map(move |ep| (ns_uri.clone(), ep.clone()))
             })
             .collect();
-
-        let mut new_rules = OrderedRuleSet::default();
-        let mut shadowed_rules = ShadowedRulePaths::new();
 
         for (ns_uri, entry_point) in &entry_points_to_process {
             debug!(
@@ -384,22 +442,20 @@ pub fn generate_rules_for_server(
                 continue;
             }
 
-            let (ep_node_id, entry_point_qualified) =
-                match resolve_path(&session, &entry_point.browse_path, &source_namespaces) {
-                    Ok(resolved) => resolved,
-                    Err(e) => {
-                        warn!("Pfad nicht aufloesbar: {}", e);
-                        continue;
-                    }
-                };
-
-            let children = match browse_children(&session, &ep_node_id) {
-                Ok(c) => c,
-                Err(e) => {
-                    warn!("Browse fehlgeschlagen: {}", e);
-                    continue;
-                }
+            // A companion entry point may legitimately be absent on this source.
+            // A failed Browse, timeout or ambiguous path is not an absent path and
+            // must abort the attempt instead of publishing incomplete rules.
+            let Some((ep_node_id, entry_point_qualified)) =
+                resolve_path(&session, &entry_point.browse_path, &source_namespaces)?
+            else {
+                debug!(
+                    "Entry-Point auf dieser Quelle nicht vorhanden: {:?}",
+                    entry_point.browse_path
+                );
+                continue;
             };
+
+            let children = browse_children(&session, &ep_node_id)?;
 
             debug!("  {} Kinder gefunden", children.len());
 
@@ -610,30 +666,40 @@ pub fn generate_rules_for_server(
             "rule_traversal",
             traversal_started.elapsed(),
         );
-        if !new_rules.is_empty() || !shadowed_rules.is_empty() {
-            debug!("\nSpeichere {} neue Regeln...", new_rules.len());
-            let persist_started = Instant::now();
-            merge_and_save_rules(rules_path, new_rules.as_slice(), &shadowed_rules)?;
-            log_rule_timing(
-                server_address,
-                "rule_merge_persist",
-                persist_started.elapsed(),
-            );
-        } else {
-            log_rule_timing(server_address, "rule_merge_persist", Duration::ZERO);
-        }
+        control.check()?;
     }
 
-    log_rule_timing(server_address, "rule_total", total_started.elapsed());
+    log_rule_timing(
+        server_address,
+        "rule_generate_delta",
+        total_started.elapsed(),
+    );
     debug!("=== Regelgenerierung abgeschlossen ===\n");
-    Ok(created_node_ids)
+    Ok(GeneratedRules {
+        created_node_ids,
+        rules: new_rules.ordered,
+        shadowed_rules,
+    })
 }
 
 fn resolve_path(
     session: &Arc<RwLock<Session>>,
     path: &[String],
     source_namespaces: &[String],
-) -> Result<(NodeId, Vec<QualifiedPathElement>), Box<dyn std::error::Error>> {
+) -> Result<Option<(NodeId, Vec<QualifiedPathElement>)>, Box<dyn std::error::Error>> {
+    resolve_path_with_browse(path, source_namespaces, |node_id| {
+        browse_children(session, node_id)
+    })
+}
+
+fn resolve_path_with_browse<F>(
+    path: &[String],
+    source_namespaces: &[String],
+    mut browse: F,
+) -> Result<Option<(NodeId, Vec<QualifiedPathElement>)>, Box<dyn std::error::Error>>
+where
+    F: FnMut(&NodeId) -> Result<Vec<ChildNode>, Box<dyn std::error::Error>>,
+{
     let mut current_id = NodeId::new(0, OBJECTS_NODE_ID);
     let mut qualified_path = vec![QualifiedPathElement {
         namespace_uri: namespace_uri_for_index(source_namespaces, 0)?,
@@ -647,7 +713,7 @@ fn resolve_path(
     };
 
     for step in steps {
-        let children = browse_children(session, &current_id)?;
+        let children = browse(&current_id)?;
         let matches = children
             .iter()
             .filter(|child| child.browse_name == *step)
@@ -657,7 +723,7 @@ fn resolve_path(
                 current_id = child.node_id.clone();
                 qualified_path.push(qualified_path_element(child, source_namespaces)?);
             }
-            [] => return Err(format!("Schritt '{}' nicht gefunden", step).into()),
+            [] => return Ok(None),
             _ => {
                 return Err(format!(
                     "Schritt '{}' ist ohne Namespace-Identitaet mehrdeutig",
@@ -667,7 +733,7 @@ fn resolve_path(
             }
         }
     }
-    Ok((current_id, qualified_path))
+    Ok(Some((current_id, qualified_path)))
 }
 
 fn browse_children(
@@ -1435,13 +1501,11 @@ fn insert_object_node_under_parent(
     node_id
 }
 
-fn load_rules(rules_path: &str) -> Vec<AggregationRule> {
-    if !std::path::Path::new(rules_path).exists() {
-        return Vec::new();
-    }
+fn load_rules(rules_path: &str) -> Result<Vec<AggregationRule>, Box<dyn std::error::Error>> {
     match File::open(rules_path) {
-        Ok(file) => serde_json::from_reader(BufReader::new(file)).unwrap_or_default(),
-        Err(_) => Vec::new(),
+        Ok(file) => Ok(serde_json::from_reader(BufReader::new(file))?),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Vec::new()),
+        Err(error) => Err(error.into()),
     }
 }
 
@@ -1449,7 +1513,7 @@ fn executor_rules_path(rules_path: &str) -> PathBuf {
     Path::new(rules_path).with_file_name("rules_executor.json")
 }
 
-fn executor_rule(rule: &AggregationRule) -> ExecutorRule {
+pub(crate) fn executor_rule(rule: &AggregationRule) -> ExecutorRule {
     ExecutorRule {
         target_node: rule.target_node_qualified.clone(),
         source_node: rule.source_node_qualified.clone(),
@@ -1463,8 +1527,7 @@ fn executor_rule(rule: &AggregationRule) -> ExecutorRule {
     }
 }
 
-#[cfg(test)]
-fn executor_projection(rules: &[AggregationRule]) -> Vec<ExecutorRule> {
+pub(crate) fn executor_projection(rules: &[AggregationRule]) -> Vec<ExecutorRule> {
     let mut projected = Vec::new();
     let mut seen = HashSet::new();
     for rule in rules {
@@ -1515,7 +1578,7 @@ fn write_rule_files(
     Ok(())
 }
 
-fn merge_rules(
+pub(crate) fn merge_rules(
     mut existing: Vec<AggregationRule>,
     new_rules: &[AggregationRule],
     shadowed_rules: &ShadowedRulePaths,
@@ -1543,7 +1606,8 @@ fn merge_and_save_rules(
     new_rules: &[AggregationRule],
     shadowed_rules: &ShadowedRulePaths,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let (existing, added, removed) = merge_rules(load_rules(rules_path), new_rules, shadowed_rules);
+    let (existing, added, removed) =
+        merge_rules(load_rules(rules_path)?, new_rules, shadowed_rules);
     write_rule_files(rules_path, &existing)?;
     if removed > 0 {
         debug!("  Entferne {} veraltete Direktregel(n)", removed);
@@ -1582,6 +1646,60 @@ mod recursion_tests {
             continuation_point,
             references: Some(references),
         }
+    }
+
+    #[test]
+    fn invalid_existing_rule_file_is_not_overwritten_as_an_empty_rule_set() {
+        let temp = std::env::temp_dir().join(format!(
+            "ojies-rule-input-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&temp).unwrap();
+        let path = temp.join("rules.json");
+        let rules_path = path.to_str().unwrap();
+        // First use is allowed; a malformed existing file is an input failure.
+        assert!(load_rules(rules_path).unwrap().is_empty());
+        std::fs::write(&path, b"{ malformed existing rules").unwrap();
+        assert!(merge_and_save_rules(rules_path, &[], &ShadowedRulePaths::new()).is_err());
+        assert_eq!(std::fs::read(&path).unwrap(), b"{ malformed existing rules");
+        assert!(!temp.join("rules_executor.json").exists());
+        std::fs::remove_file(&path).unwrap();
+        // A path that exists but cannot be read as a file must not mean empty.
+        std::fs::create_dir(&path).unwrap();
+        assert!(load_rules(rules_path).is_err());
+        std::fs::remove_dir(&path).unwrap();
+        std::fs::remove_dir(&temp).unwrap();
+    }
+
+    #[test]
+    fn entry_point_resolution_distinguishes_absence_from_failed_browse() {
+        let path = vec!["Objects".into(), "Device".into()];
+        let namespaces = vec!["http://opcfoundation.org/UA/".into()];
+        let absent = resolve_path_with_browse(&path, &namespaces, |_| Ok(Vec::new())).unwrap();
+        assert!(absent.is_none());
+        let failed =
+            resolve_path_with_browse(&path, &namespaces, |_| Err(StatusCode::BadTimeout.into()));
+        assert_eq!(
+            failed.unwrap_err().downcast_ref::<StatusCode>(),
+            Some(&StatusCode::BadTimeout)
+        );
+    }
+
+    #[test]
+    fn entry_point_resolution_rejects_ambiguous_names() {
+        let path = vec!["Objects".into(), "Device".into()];
+        let namespaces = vec!["http://opcfoundation.org/UA/".into(), "urn:test".into()];
+        let result = resolve_path_with_browse(&path, &namespaces, |_| {
+            Ok(vec![
+                test_child(1, 10, "Device"),
+                test_child(1, 11, "Device"),
+            ])
+        });
+        assert!(result.unwrap_err().to_string().contains("mehrdeutig"));
     }
 
     #[test]

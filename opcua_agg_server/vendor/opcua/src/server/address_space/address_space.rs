@@ -912,6 +912,21 @@ impl AddressSpace {
         result
     }
 
+    /// Snapshot identifiers for an externally serialized onboarding transaction.
+    pub fn aggregation_node_ids(&self) -> Vec<NodeId> {
+        self.node_map.keys().cloned().collect()
+    }
+
+    /// Remove only the explicitly owned nodes during failed onboarding. Unlike
+    /// recursive deletion, this cannot follow a reference into another source.
+    pub fn remove_aggregation_nodes_exact(&mut self, nodes: &[NodeId]) {
+        for node in nodes {
+            self.references.delete_node_references(node);
+            self.node_map.remove(node);
+        }
+        self.update_last_modified();
+    }
+
     /// Deletes a node by its node id, and all of its properties and optionally any references to or from it it in the
     /// address space.
     pub fn delete(&mut self, node_id: &NodeId, delete_target_references: bool) -> bool {

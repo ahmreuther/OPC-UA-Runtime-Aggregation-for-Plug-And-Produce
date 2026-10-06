@@ -1,13 +1,9 @@
 # Data availability
 
-The included research dataset is titled:
+This repository combines source code and curated evidence for the revised OJIES study. The new current selection is defined by `Validation/current_20261006/cohort.json`. The unchanged historical public records remain available, including the one physical E02 configuration run.
 
-> Research Data for Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug & Produce Systems
+`RESEARCH_DATA_FILE_MANIFEST.csv` inventories the public data and associated documentation. `RESEARCH_DATA_CHECKSUMS_SHA256.txt` verifies their bytes. `results/current_20261006/export_manifest.json` documents the current export and distinguishes unchanged numerical records from projections of private manifests.
 
-The dataset is included directly in this repository and the same immutable `v0.1.0` tag as the software. It contains curated E01–E05 evidence, public manifests, 10,000 paired E03 observations, the 21-run E04/E05 matrix, structured phase-timing records, derived tables, a data dictionary, and SHA-256 integrity records. No separate data repository or overlay step is required.
+The public subset omits robot URDFs and meshes, enriched robot NodeSets, experimental packet captures, deployment credentials, private infrastructure identifiers, large runtime snapshots, and unrelated worktree state. These exclusions mean that the public subset permits numerical recomputation and audit of reported validation results, not a complete reconstruction of every semantic or physical experiment.
 
-`RESEARCH_DATA_FILE_MANIFEST.csv` defines the dataset boundary and `RESEARCH_DATA_CHECKSUMS_SHA256.txt` verifies its files. Add the article DOI after publication. If a separate archival data DOI is later minted from this immutable combined tag, add that DOI to the GitLab release description without rewriting the tag.
-
-Excluded material comprises robot URDFs and meshes without confirmed redistribution rights, enriched robot NodeSets, private laboratory endpoints, serial numbers, experimental packet captures, repeated runtime-state snapshots, deployment keys, verbose logs, and unrelated working-tree state.
-
-E02's target application is archived separately as WebSkillComposition v1.0.0: <https://doi.org/10.5281/zenodo.17034716>.
+The target application for E02 is separately archived as [WebSkillComposition v1.0.0](https://doi.org/10.5281/zenodo.17034716). The earlier combined software and data artifact is [Zenodo v0.1.0](https://doi.org/10.5281/zenodo.21756816). A new archive of v0.2.0 must be added as a version of that existing record. The earlier DOI is not a DOI for these revised contents.

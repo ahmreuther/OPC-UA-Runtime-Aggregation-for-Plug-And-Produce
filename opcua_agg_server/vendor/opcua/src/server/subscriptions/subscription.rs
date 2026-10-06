@@ -19,6 +19,7 @@ use crate::core::handle::Handle;
 use crate::prelude::SubscriptionService;
 
 use crate::server::aggregation_server::aggregation_server::AggregationServer;
+use crate::server::aggregation_server::services::subscription::AggregationNotificationQueue;
 use crate::server::{
     address_space::AddressSpace,
     constants,
@@ -114,6 +115,8 @@ pub struct Subscription {
     subscription_id: u32,
     /// Publishing interval in milliseconds
     publishing_interval: Duration,
+    /// Maximum data changes/events in one Publish response; zero is unlimited.
+    max_notifications_per_publish: u32,
     /// The lifetime count reset value
     max_lifetime_counter: u32,
     /// Keep alive count reset value
@@ -158,16 +161,24 @@ pub struct Subscription {
     /// Server diagnostics to track creation / destruction / modification of the subscription
     #[serde(skip)]
     diagnostics: Arc<RwLock<ServerDiagnostics>>,
-    /// Stops the subscription calling diagnostics on drop
+    /// Metrics snapshots do not own diagnostics or upstream subscriptions
     #[serde(skip)]
     diagnostics_on_drop: bool,
     // Aggregation Server
     #[serde(skip)]
     aggregation_server: Option<AggregationServer>,
+    /// Source callbacks enqueue without locking the upper session.
+    #[serde(skip)]
+    aggregation_notifications: AggregationNotificationQueue,
 }
 
 impl Drop for Subscription {
     fn drop(&mut self) {
+        // Metrics clones must never delete the live subscription's source maps
+        // or issue DeleteSubscriptions to its source servers.
+        if !self.diagnostics_on_drop {
+            return;
+        }
         'remove_lower_server_subscriptions: {
             let Some(aggregation_server) = &self.aggregation_server else {
                 break 'remove_lower_server_subscriptions;
@@ -190,20 +201,31 @@ impl Drop for Subscription {
 
             let sessions = aggregation_server.lower_server_sessions_p.read();
             for lserver_id in lservers {
-                let Ok(sub) = map_db.get_lserver_sub_id(lserver_id, self.subscription_id) else {
-                    break 'remove_lower_server_subscriptions;
-                };
-                let Some(session_p) = sessions.get(&lserver_id) else {
-                    continue;
-                };
-                if let Err(e) = session_p.read().delete_subscription(sub.lserver_sub_id) {
-                    warn!("Error removing subscription {} from lower server {} belonging to aggregation \
-                        server subscription {}. Status Code {}.",
-                        lserver_id, sub.lserver_sub_id, &self.subscription_id, e);
+                if let Some(session_p) = sessions.get(&lserver_id) {
+                    // Resolve ownership only after locking the source session.
+                    // Old mapped IDs can be stale or invalidated during reconnect.
+                    let source_session = session_p.read();
+                    if let Err(error) =
+                        source_session.delete_subscription_context(self.subscription_id)
+                    {
+                        warn!(
+                            "Error removing source subscriptions for aggregation subscription {} \
+                            on lower server {}: {}",
+                            self.subscription_id, lserver_id, error
+                        );
+                    }
+                    // Keep the source lock through map cleanup so its reconnect
+                    // cannot restore mappings after owner cancellation.
+                    if let Err(error) =
+                        map_db.delete_subscription_context(lserver_id, self.subscription_id)
+                    {
+                        warn!("Could not delete subscription map: {:?}", error);
+                    }
+                } else if let Err(error) =
+                    map_db.delete_subscription_context(lserver_id, self.subscription_id)
+                {
+                    warn!("Could not delete subscription map: {:?}", error);
                 }
-                if let Err(e) = map_db.delete_subscription(sub.internal_sub_id) {
-                    warn!("Could not delete subscription map: {:?}", e);
-                };
             }
         }
         if self.diagnostics_on_drop {
@@ -227,6 +249,7 @@ impl Subscription {
         let subscription = Subscription {
             subscription_id,
             publishing_interval,
+            max_notifications_per_publish: 0,
             priority,
             monitored_items: HashMap::with_capacity(constants::DEFAULT_MONITORED_ITEM_CAPACITY),
             max_lifetime_counter: lifetime_counter,
@@ -247,6 +270,7 @@ impl Subscription {
             diagnostics,
             diagnostics_on_drop: true,
             aggregation_server,
+            aggregation_notifications: Arc::new(Mutex::new(VecDeque::new())),
         };
         {
             let mut diagnostics = trace_write_lock!(subscription.diagnostics);
@@ -493,6 +517,22 @@ impl Subscription {
             }
         };
 
+        // Source notifications must survive a tick without a queued Publish
+        // request. Enqueue them before sampling local items, whose state-machine
+        // result can be discarded while the subscription is Late.
+        if publishing_interval_elapsed
+            && self.publishing_enabled
+            && !matches!(
+                self.state,
+                SubscriptionState::Closed | SubscriptionState::Creating
+            )
+        {
+            let pending: Vec<_> = self.aggregation_notifications.lock().drain(..).collect();
+            for notification in self.make_notification_messages(now, pending) {
+                self.enqueue_notification(notification);
+            }
+        }
+
         // Do a tick on monitored items. Note that monitored items normally update when the interval
         // elapses but they don't have to. So this is called every tick just to catch items with their
         // own intervals.
@@ -537,6 +577,15 @@ impl Subscription {
 
     pub(crate) fn enqueue_notification(&mut self, notification: NotificationMessage) {
         use std::u32;
+        // Keep-alives advertise the next data sequence number without consuming it.
+        if notification
+            .notification_data
+            .as_ref()
+            .map_or(true, Vec::is_empty)
+        {
+            self.notifications.push_back(notification);
+            return;
+        }
         // For sanity, check the sequence number is the expected sequence number.
         let expected_sequence_number = if self.last_sequence_number == u32::MAX {
             1
@@ -563,13 +612,10 @@ impl Subscription {
         // Now act on the state's action
         match update_state_result.update_state_action {
             UpdateStateAction::None => {
-                if let Some(ref notification) = notification {
-                    // Reset the next sequence number to the discarded notification
-                    let notification_sequence_number = notification.sequence_number;
-                    self.sequence_number.set_next(notification_sequence_number);
-                    debug!("Notification message nr {} was being ignored for a do-nothing, update state was {:?}", notification_sequence_number, update_state_result);
+                // A late Publish request must not discard already sampled data.
+                if let Some(notification) = notification {
+                    self.enqueue_notification(notification);
                 }
-                // Send nothing
             }
             UpdateStateAction::ReturnKeepAlive => {
                 if let Some(ref notification) = notification {
@@ -580,10 +626,19 @@ impl Subscription {
                 }
                 // Send a keep alive
                 debug!("Sending keep alive response");
-                let notification = NotificationMessage::keep_alive(
-                    self.sequence_number.next(),
-                    DateTime::from(*now),
-                );
+                let next_data_sequence = self
+                    .notifications
+                    .iter()
+                    .find(|message| {
+                        message
+                            .notification_data
+                            .as_ref()
+                            .is_some_and(|data| !data.is_empty())
+                    })
+                    .map(|message| message.sequence_number)
+                    .unwrap_or_else(|| self.sequence_number.clone().next());
+                let notification =
+                    NotificationMessage::keep_alive(next_data_sequence, DateTime::from(*now));
                 self.enqueue_notification(notification);
             }
             UpdateStateAction::ReturnNotifications => {
@@ -601,8 +656,8 @@ impl Subscription {
                 //                self.enqueue_notification(notification);
             }
             UpdateStateAction::SubscriptionExpired => {
-                if notification.is_some() {
-                    panic!("SubscriptionExpired got a notification");
+                if let Some(notification) = notification {
+                    self.enqueue_notification(notification);
                 }
                 // Delete the monitored items, issue a status change for the subscription
                 debug!("Subscription status change to closed / timeout");
@@ -618,7 +673,17 @@ impl Subscription {
     }
 
     pub(crate) fn take_notification(&mut self) -> Option<NotificationMessage> {
-        self.notifications.pop_front()
+        if self.publishing_enabled || self.state == SubscriptionState::Closed {
+            self.notifications.pop_front()
+        } else {
+            let keep_alive = self.notifications.iter().position(|message| {
+                message
+                    .notification_data
+                    .as_ref()
+                    .map_or(true, Vec::is_empty)
+            })?;
+            self.notifications.remove(keep_alive)
+        }
     }
 
     // See OPC UA Part 4 5.13.1.2 State Table
@@ -833,6 +898,7 @@ impl Subscription {
                     && p.publishing_req_queued
                 {
                     // State #14
+                    self.reset_lifetime_counter();
                     self.first_message_sent = true;
                     self.state = SubscriptionState::Normal;
                     return UpdateStateResult::new(
@@ -843,9 +909,10 @@ impl Subscription {
                     && p.publishing_req_queued
                     && self.keep_alive_counter == 1
                     && (!self.publishing_enabled
-                        || (self.publishing_enabled && p.notifications_available))
+                        || (self.publishing_enabled && !p.notifications_available))
                 {
                     // State #15
+                    self.reset_lifetime_counter();
                     self.start_publishing_timer();
                     self.reset_keep_alive_counter();
                     return UpdateStateResult::new(
@@ -902,6 +969,7 @@ impl Subscription {
         publishing_interval_elapsed: bool,
         resend_data: bool,
     ) -> Option<NotificationMessage> {
+        let collect_notifications = publishing_interval_elapsed && self.publishing_enabled;
         let mut triggered_items: BTreeSet<u32> = BTreeSet::new();
         let mut monitored_item_notifications = Vec::with_capacity(self.monitored_items.len() * 2);
 
@@ -911,7 +979,7 @@ impl Subscription {
             match monitored_item.tick(now, address_space, publishing_interval_elapsed, resend_data)
             {
                 TickResult::ReportValueChanged => {
-                    if publishing_interval_elapsed {
+                    if collect_notifications {
                         // If this monitored item has triggered items, then they need to be handled
                         match monitoring_mode {
                             MonitoringMode::Reporting => {
@@ -938,7 +1006,7 @@ impl Subscription {
                 TickResult::ValueChanged => {
                     // The monitored item doesn't have changes to report but its value did change so it
                     // is still necessary to check its triggered items.
-                    if publishing_interval_elapsed {
+                    if collect_notifications {
                         match monitoring_mode {
                             MonitoringMode::Sampling => {
                                 // If the monitoring mode of the triggering item is SAMPLING, then it is not reported when the
@@ -992,53 +1060,45 @@ impl Subscription {
             }
         });
 
-        // Produce a data change notification
-        if !monitored_item_notifications.is_empty() {
-            let next_sequence_number = self.sequence_number.next();
-
-            trace!(
-                "Create notification for subscription {}, sequence number {}",
-                self.subscription_id,
-                next_sequence_number
-            );
-
-            // Collect all datachange notifications
-            let data_change_notifications = monitored_item_notifications
-                .iter()
-                .filter(|v| matches!(v, Notification::MonitoredItemNotification(_)))
-                .map(|v| {
-                    if let Notification::MonitoredItemNotification(v) = v {
-                        v.clone()
-                    } else {
-                        panic!()
-                    }
-                })
-                .collect();
-
-            // Collect event notifications
-            let event_notifications = monitored_item_notifications
-                .iter()
-                .filter(|v| matches!(v, Notification::Event(_)))
-                .map(|v| {
-                    if let Notification::Event(v) = v {
-                        v.clone()
-                    } else {
-                        panic!()
-                    }
-                })
-                .collect();
-
-            // Make a notification
-            let notification = NotificationMessage::data_change(
-                next_sequence_number,
-                DateTime::from(*now),
-                data_change_notifications,
-                event_notifications,
-            );
-            Some(notification)
-        } else {
-            None
+        let mut messages = self.make_notification_messages(now, monitored_item_notifications);
+        // The state machine handles the final message; retain preceding batches
+        // now so every sample survives when no Publish request is queued yet.
+        let last = messages.pop_back();
+        for notification in messages {
+            self.enqueue_notification(notification);
         }
+        last
+    }
+
+    fn make_notification_messages(
+        &mut self,
+        now: &DateTimeUtc,
+        notifications: Vec<Notification>,
+    ) -> VecDeque<NotificationMessage> {
+        let limit = if self.max_notifications_per_publish == 0 {
+            usize::MAX
+        } else {
+            self.max_notifications_per_publish as usize
+        };
+        let mut notifications = notifications.into_iter().peekable();
+        let mut messages = VecDeque::new();
+        while notifications.peek().is_some() {
+            let mut data_changes = Vec::new();
+            let mut events = Vec::new();
+            for notification in notifications.by_ref().take(limit) {
+                match notification {
+                    Notification::MonitoredItemNotification(value) => data_changes.push(value),
+                    Notification::Event(event) => events.push(event),
+                }
+            }
+            messages.push_back(NotificationMessage::data_change(
+                self.sequence_number.next(),
+                DateTime::from(*now),
+                data_changes,
+                events,
+            ));
+        }
+        messages
     }
 
     /// Reset the keep-alive counter to the maximum keep-alive count of the Subscription.
@@ -1108,6 +1168,10 @@ impl Subscription {
     pub(crate) fn set_publishing_interval(&mut self, publishing_interval: Duration) {
         self.publishing_interval = publishing_interval;
         self.reset_lifetime_counter();
+    }
+
+    pub(crate) fn set_max_notifications_per_publish(&mut self, maximum: u32) {
+        self.max_notifications_per_publish = maximum;
     }
 
     pub fn max_keep_alive_count(&self) -> u32 {
@@ -1196,11 +1260,423 @@ impl Subscription {
         }
     }
 
-    pub(crate) fn next_sequence_number(&mut self) -> u32 {
-        self.sequence_number.next()
+    pub(crate) fn aggregation_server(&self) -> Option<AggregationServer> {
+        self.aggregation_server.clone()
+    }
+
+    pub(crate) fn aggregation_notifications(&self) -> AggregationNotificationQueue {
+        self.aggregation_notifications.clone()
     }
 
     pub(crate) fn publishing_enabled(&self) -> bool {
         self.publishing_enabled
+    }
+}
+
+#[cfg(test)]
+mod aggregation_notification_tests {
+    use super::*;
+
+    #[test]
+    fn forwarded_values_wait_for_publish_interval_and_resume_without_loss() {
+        let mut sub = Subscription::new(
+            Arc::new(RwLock::new(ServerDiagnostics::default())),
+            7,
+            true,
+            100.0,
+            300,
+            100,
+            0,
+            None,
+        );
+        let value = MonitoredItemNotification {
+            client_handle: 456,
+            value: DataValue::new_now(42u32),
+        };
+        sub.aggregation_notifications()
+            .lock()
+            .push_back(value.clone().into());
+        sub.set_state(SubscriptionState::Normal);
+        let now = chrono::Utc::now();
+        let address_space = AddressSpace::new();
+        sub.tick(
+            &now,
+            &address_space,
+            TickReason::ReceivePublishRequest,
+            true,
+        );
+        assert!(sub.take_notification().is_none());
+        sub.set_publishing_enabled(false);
+        let later = now + chrono::Duration::seconds(1);
+        sub.tick(&later, &address_space, TickReason::TickTimerFired, true);
+        assert_eq!(sub.aggregation_notifications().lock().len(), 1);
+        // A keep-alive may be queued while publishing is disabled.
+        while sub.take_notification().is_some() {}
+        sub.set_publishing_enabled(true);
+        let later = later + chrono::Duration::seconds(1);
+        sub.tick(&later, &address_space, TickReason::TickTimerFired, false);
+        assert!(sub.aggregation_notifications().lock().is_empty());
+        // Even without a Publish request at the timer tick the value is retained.
+        sub.tick(
+            &later,
+            &address_space,
+            TickReason::ReceivePublishRequest,
+            true,
+        );
+        let notification = sub.take_notification().expect("source value was discarded");
+        let sequence_number = notification.sequence_number;
+        let data: DataChangeNotification = notification.notification_data.unwrap()[0]
+            .decode_inner(&DecodingOptions::default())
+            .unwrap();
+        assert_eq!(data.monitored_items.unwrap(), vec![value]);
+        assert!(sub.take_notification().is_none());
+        sub.aggregation_notifications().lock().push_back(
+            MonitoredItemNotification {
+                client_handle: 456,
+                value: DataValue::new_now(43u32),
+            }
+            .into(),
+        );
+        let later = later + chrono::Duration::seconds(1);
+        sub.tick(&later, &address_space, TickReason::TickTimerFired, true);
+        let next = sub.take_notification().unwrap();
+        assert_eq!(next.sequence_number, sequence_number + 1);
+    }
+
+    #[test]
+    fn pending_source_value_does_not_panic_when_subscription_expires() {
+        let mut sub = Subscription::new(
+            Arc::new(RwLock::new(ServerDiagnostics::default())),
+            7,
+            true,
+            100.0,
+            300,
+            100,
+            0,
+            None,
+        );
+        sub.set_state(SubscriptionState::Normal);
+        sub.lifetime_counter = 1;
+        sub.aggregation_notifications().lock().push_back(
+            MonitoredItemNotification {
+                client_handle: 456,
+                value: DataValue::new_now(42u32),
+            }
+            .into(),
+        );
+        sub.tick(
+            &(chrono::Utc::now() + chrono::Duration::seconds(1)),
+            &AddressSpace::new(),
+            TickReason::TickTimerFired,
+            false,
+        );
+        assert_eq!(sub.state, SubscriptionState::Closed);
+        let value = sub.take_notification().unwrap();
+        let expired = sub.take_notification().unwrap();
+        assert_eq!(expired.sequence_number, value.sequence_number + 1);
+        let status: StatusChangeNotification = expired.notification_data.unwrap()[0]
+            .decode_inner(&DecodingOptions::default())
+            .unwrap();
+        assert_eq!(status.status, StatusCode::BadTimeout);
+        assert!(sub.ready_to_remove());
+    }
+}
+
+#[cfg(test)]
+mod publish_regression_tests {
+    use super::*;
+
+    fn subscription() -> Subscription {
+        let mut subscription = Subscription::new(
+            Arc::new(RwLock::new(ServerDiagnostics::default())),
+            1,
+            true,
+            100.0,
+            300,
+            100,
+            0,
+            None,
+        );
+        subscription.set_state(SubscriptionState::Normal);
+        subscription
+    }
+
+    #[test]
+    fn keep_alives_do_not_consume_data_sequence_numbers() {
+        let mut subscription = subscription();
+        let now = chrono::Utc::now();
+        for _ in 0..3 {
+            subscription.handle_state_result(
+                &now,
+                UpdateStateResult::new(
+                    HandledState::KeepAlive15,
+                    UpdateStateAction::ReturnKeepAlive,
+                ),
+                None,
+            );
+            let keep_alive = subscription.take_notification().unwrap();
+            assert_eq!(keep_alive.sequence_number, 1);
+            assert!(keep_alive.notification_data.is_none());
+        }
+        subscription.aggregation_notifications().lock().push_back(
+            MonitoredItemNotification {
+                client_handle: 40,
+                value: DataValue::new_now(42u32),
+            }
+            .into(),
+        );
+        subscription.tick(
+            &(now + chrono::Duration::seconds(1)),
+            &AddressSpace::new(),
+            TickReason::TickTimerFired,
+            true,
+        );
+        assert_eq!(subscription.take_notification().unwrap().sequence_number, 1);
+    }
+
+    #[test]
+    fn paused_subscription_retains_pending_data_but_sends_keep_alive() {
+        let mut subscription = subscription();
+        let now = chrono::Utc::now();
+        let sequence = subscription.sequence_number.next();
+        subscription.enqueue_notification(NotificationMessage::data_change(
+            sequence,
+            DateTime::from(now),
+            vec![MonitoredItemNotification {
+                client_handle: 40,
+                value: DataValue::new_now(42u32),
+            }],
+            vec![],
+        ));
+        subscription.set_publishing_enabled(false);
+        subscription.handle_state_result(
+            &now,
+            UpdateStateResult::new(
+                HandledState::KeepAlive15,
+                UpdateStateAction::ReturnKeepAlive,
+            ),
+            None,
+        );
+        let keep_alive = subscription.take_notification().unwrap();
+        assert!(keep_alive.notification_data.is_none());
+        assert_eq!(keep_alive.sequence_number, sequence);
+        assert!(subscription.take_notification().is_none());
+        subscription.set_publishing_enabled(true);
+        assert_eq!(
+            subscription.take_notification().unwrap().sequence_number,
+            sequence
+        );
+    }
+
+    #[test]
+    fn local_notification_survives_a_tick_without_publish_request() {
+        let mut subscription = subscription();
+        let sequence = subscription.sequence_number.next();
+        let notification = NotificationMessage::data_change(
+            sequence,
+            DateTime::now(),
+            vec![MonitoredItemNotification {
+                client_handle: 40,
+                value: DataValue::new_now(42u32),
+            }],
+            vec![],
+        );
+        subscription.handle_state_result(
+            &chrono::Utc::now(),
+            UpdateStateResult::new(HandledState::IntervalElapsed8, UpdateStateAction::None),
+            Some(notification.clone()),
+        );
+        assert_eq!(subscription.take_notification(), Some(notification));
+    }
+
+    #[test]
+    fn quiet_subscription_keeps_publishing_alive_and_resumes_data() {
+        let mut subscription = Subscription::new(
+            Arc::new(RwLock::new(ServerDiagnostics::default())),
+            1,
+            true,
+            100.0,
+            6,
+            2,
+            0,
+            None,
+        );
+        subscription.set_state(SubscriptionState::Normal);
+        let started = subscription.last_time_publishing_interval_elapsed;
+        let address_space = AddressSpace::new();
+        let mut keep_alive_responses = 0;
+        // Four full lifetimes with Publish requests continuously available must
+        // produce repeated keep-alives, never stall at a counter of one or expire.
+        for interval in 1..=24 {
+            let now = started + chrono::Duration::milliseconds(interval * 100);
+            subscription.tick(&now, &address_space, TickReason::TickTimerFired, true);
+            assert_ne!(subscription.state, SubscriptionState::Closed);
+            while let Some(notification) = subscription.take_notification() {
+                assert!(notification.notification_data.is_none());
+                assert_eq!(notification.sequence_number, 1);
+                keep_alive_responses += 1;
+            }
+        }
+        assert!(keep_alive_responses >= 10);
+        let value = MonitoredItemNotification {
+            client_handle: 40,
+            value: DataValue::new_now(42u32),
+        };
+        subscription
+            .aggregation_notifications()
+            .lock()
+            .push_back(value.clone().into());
+        subscription.tick(
+            &(started + chrono::Duration::milliseconds(2500)),
+            &address_space,
+            TickReason::TickTimerFired,
+            true,
+        );
+        let notification = subscription
+            .take_notification()
+            .expect("no data after quiet period");
+        assert_eq!(notification.sequence_number, 1);
+        let data: DataChangeNotification = notification.notification_data.unwrap()[0]
+            .decode_inner(&DecodingOptions::default())
+            .unwrap();
+        assert_eq!(data.monitored_items.unwrap(), vec![value]);
+        assert_eq!(
+            subscription.lifetime_counter,
+            subscription.max_lifetime_counter
+        );
+    }
+}
+
+#[cfg(test)]
+mod notification_limit_tests {
+    use super::*;
+
+    fn subscription() -> Subscription {
+        let mut subscription = Subscription::new(
+            Arc::new(RwLock::new(ServerDiagnostics::default())),
+            1,
+            true,
+            100.0,
+            300,
+            100,
+            0,
+            None,
+        );
+        subscription.set_state(SubscriptionState::Normal);
+        subscription
+    }
+
+    fn data(handle: u32, value: u32) -> Notification {
+        MonitoredItemNotification {
+            client_handle: handle,
+            value: DataValue::new_now(value),
+        }
+        .into()
+    }
+
+    fn decode(message: &NotificationMessage) -> Vec<Notification> {
+        let mut result = Vec::new();
+        for data in message.notification_data.as_ref().unwrap() {
+            match data.node_id.as_object_id().unwrap() {
+                ObjectId::DataChangeNotification_Encoding_DefaultBinary => {
+                    let values: DataChangeNotification =
+                        data.decode_inner(&DecodingOptions::default()).unwrap();
+                    result.extend(
+                        values
+                            .monitored_items
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(Notification::MonitoredItemNotification),
+                    );
+                }
+                ObjectId::EventNotificationList_Encoding_DefaultBinary => {
+                    let values: EventNotificationList =
+                        data.decode_inner(&DecodingOptions::default()).unwrap();
+                    result.extend(
+                        values
+                            .events
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(Notification::Event),
+                    );
+                }
+                _ => panic!("unexpected notification type"),
+            }
+        }
+        result
+    }
+
+    #[test]
+    fn combined_source_values_and_events_obey_publish_limit_without_loss() {
+        let mut subscription = subscription();
+        subscription.set_max_notifications_per_publish(2);
+        let first_source = subscription.aggregation_notifications();
+        let second_source = subscription.aggregation_notifications();
+        let expected = vec![
+            data(10, 41),
+            data(10, 42),
+            data(20, 43),
+            Notification::Event(EventFieldList {
+                client_handle: 30,
+                event_fields: Some(vec![Variant::UInt32(44)]),
+            }),
+            data(20, 45),
+        ];
+        first_source.lock().extend(expected[..2].iter().cloned());
+        second_source.lock().extend(expected[2..].iter().cloned());
+        let now = subscription.last_time_publishing_interval_elapsed + chrono::Duration::seconds(1);
+        subscription.tick(
+            &now,
+            &AddressSpace::new(),
+            TickReason::TickTimerFired,
+            false,
+        );
+        let mut actual = Vec::new();
+        for (sequence, count) in [(1, 2), (2, 2), (3, 1)] {
+            let message = subscription
+                .take_notification()
+                .expect("missing limited batch");
+            assert_eq!(message.sequence_number, sequence);
+            let batch = decode(&message);
+            assert_eq!(batch.len(), count);
+            actual.extend(batch);
+        }
+        assert_eq!(actual, expected);
+        assert!(subscription.take_notification().is_none());
+        assert!(subscription.aggregation_notifications().lock().is_empty());
+    }
+
+    #[test]
+    fn zero_limit_is_unlimited_and_limit_changes_apply_to_next_messages() {
+        let mut subscription = subscription();
+        subscription.set_max_notifications_per_publish(0);
+        subscription.aggregation_notifications().lock().extend([
+            data(10, 1),
+            data(20, 2),
+            data(20, 3),
+        ]);
+        let now = subscription.last_time_publishing_interval_elapsed + chrono::Duration::seconds(1);
+        subscription.tick(&now, &AddressSpace::new(), TickReason::TickTimerFired, true);
+        let message = subscription.take_notification().unwrap();
+        assert_eq!(message.sequence_number, 1);
+        assert_eq!(decode(&message).len(), 3);
+        assert!(subscription.take_notification().is_none());
+        subscription.set_max_notifications_per_publish(1);
+        subscription
+            .aggregation_notifications()
+            .lock()
+            .extend([data(10, 4), data(20, 5)]);
+        subscription.tick(
+            &(now + chrono::Duration::seconds(1)),
+            &AddressSpace::new(),
+            TickReason::TickTimerFired,
+            true,
+        );
+        for sequence in [2, 3] {
+            let message = subscription.take_notification().unwrap();
+            assert_eq!(message.sequence_number, sequence);
+            assert_eq!(decode(&message).len(), 1);
+        }
+        assert!(subscription.take_notification().is_none());
     }
 }

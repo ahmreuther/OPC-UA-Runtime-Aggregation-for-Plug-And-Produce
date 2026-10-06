@@ -37,7 +37,7 @@ opcua_agg_server/address_space_exports/
 logs/
 **/logs/
 
-# External research data is overlaid only in disposable verification clones
+# Curated data are explicitly added during release preparation
 Validation/performance/raw_data/
 Validation/performance/derived/
 Validation/integration/raw_data/
@@ -45,3 +45,6 @@ Validation/configuration/runs/
 
 # Local verification outputs
 verification-output/
+
+# Generated current-cohort numerical verification outputs
+results/current_20261006/reproduced/

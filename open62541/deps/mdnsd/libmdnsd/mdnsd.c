@@ -95,7 +95,7 @@ struct mdns_record {
 	int tries;
 	void (*conflict)(char *, int, void *);
 	void *arg;
-	struct timeval last_sent;
+	struct timeval last_sent, probe_due;
 	struct mdns_record *next, *list;
 };
 
@@ -174,20 +174,20 @@ static mdns_record_t *_r_next(mdns_daemon_t *d, mdns_record_t *r, const char *ho
 	return 0;
 }
 
+/* Conservative uncompressed wire size. The compression dictionary is finite,
+ * so a record name cannot be assumed to use a two-byte pointer. */
 static int _rr_len(mdns_answer_t *rr)
 {
-	int len = 12;		/* name is always compressed (dup of earlier), plus normal stuff */
-
-	if (rr->rdata)
-		len += rr->rdlen;
-	if (rr->rdname)
-		len += (int)strlen(rr->rdname); /* worst case */
-	if (rr->ip.s_addr)
-		len += 4;
-	if (rr->type == QTYPE_PTR)
-		len += 6;	/* srv record stuff */
-
-	return len;
+    int len = (int)strlen(rr->name) + 2 + 10;
+    if(rr->rdata)
+        return len + rr->rdlen;
+    if(rr->ip.s_addr)
+        len += 4;
+    if(rr->type == QTYPE_SRV)
+        len += 6;
+    if(rr->rdname)
+        len += (int)strlen(rr->rdname) + 2;
+    return len;
 }
 
 /* Compares new rdata with known a, painfully */
@@ -198,12 +198,20 @@ static int _a_match(struct resource *r, mdns_answer_t *a)
 	if (strcmp(r->name, a->name) != 0 || r->type != a->type)
 		return 0;
 
-	if (r->type == QTYPE_SRV && !strcmp(r->known.srv.name, a->rdname) && a->srv.port == r->known.srv.port &&
-		a->srv.weight == r->known.srv.weight && a->srv.priority == r->known.srv.priority)
-		return 1;
+	/* These records are decoded into typed fields by message_parse(), which
+	 * clears rdlength. A typed mismatch must not fall through to the empty
+	 * raw-data comparison: that would suppress unrelated discovery answers
+	 * and remove unrelated cached services on a goodbye. */
+	if (r->type == QTYPE_SRV)
+		return r->known.srv.name && a->rdname &&
+			!strcmp(r->known.srv.name, a->rdname) &&
+			a->srv.port == r->known.srv.port &&
+			a->srv.weight == r->known.srv.weight &&
+			a->srv.priority == r->known.srv.priority;
 
-	if ((r->type == QTYPE_PTR || r->type == QTYPE_NS || r->type == QTYPE_CNAME) && !strcmp(a->rdname, r->known.ns.name))
-		return 1;
+	if (r->type == QTYPE_PTR || r->type == QTYPE_NS || r->type == QTYPE_CNAME)
+		return r->known.ns.name && a->rdname &&
+			!strcmp(a->rdname, r->known.ns.name);
 
 	if (r->rdlength == a->rdlen && r->rdlength == 0)
 	    return 1;
@@ -581,7 +589,7 @@ mdns_daemon_t *mdnsd_new(int clazz, int frame)
 	gettimeofday(&d->now, 0);
 	d->expireall = (unsigned long int)(d->now.tv_sec + GC);
 	d->clazz = clazz;
-	d->frame = frame;
+	d->frame = frame > MAX_PACKET_LEN ? MAX_PACKET_LEN : frame;
 	d->received_callback = NULL;
 
 	return d;
@@ -887,53 +895,68 @@ int mdnsd_out(mdns_daemon_t *d, struct message *m, struct sockaddr *ip, unsigned
 	m->header.qr = 0;
 	m->header.aa = 0;
 
-	if (d->probing && _tvdiff(d->now, d->probe) <= 0) {
-		mdns_record_t *last = 0;
-
-		/* Scan probe list to ask questions and process published */
-		for (r = d->probing; r != 0;) {
-			/* Done probing, publish */
-			if (r->unique == 4) {
-				mdns_record_t *next = r->list;
-
-				if (d->probing == r)
-					d->probing = r->list;
-				else
-					last->list = r->list;
-
-				r->list = 0;
-				r->unique = 5;
-				_r_publish(d, r);
-				r = next;
-				continue;
-			}
-
-			MDNSD_LOG_TRACE("Send Probing: Name: %s, Type: %d", r->rr.name, r->rr.type);
-
-			message_qd(m, r->rr.name, r->rr.type, (unsigned short int)d->clazz);
-			r->last_sent = d->now;
-			last = r;
-			r = r->list;
-		}
-
-		/* Scan probe list again to append our to-be answers */
-		for (r = d->probing; r != 0; r = r->list) {
-			r->unique++;
-
-			MDNSD_LOG_TRACE("Send Answer in Probe: Name: %s, Type: %d", r->rr.name, r->rr.type);
-			message_ns(m, r->rr.name, r->rr.type, (unsigned short int)d->clazz, r->rr.ttl);
-			_a_copy(m, &r->rr);
-			r->last_sent = d->now;
-			ret++;
-		}
-
-		/* Process probes again in the future */
-		if (ret) {
-			d->probe.tv_sec = d->now.tv_sec;
-			d->probe.tv_usec = d->now.tv_usec + 250000;
-			return ret;
-		}
-	}
+    if (d->probing && _tvdiff(d->now, d->probe) <= 0) {
+        /* Keep DNS questions before authority records. Reserve the worst-case
+         * size of both sections before writing anything to the fixed buffer. */
+        mdns_record_t *batch[MAX_PACKET_LEN / 18];
+        size_t count = 0, i;
+        int reserved = message_packet_len(m);
+        mdns_record_t **link = &d->probing;
+        while((r = *link) != NULL) {
+            if(_tvdiff(d->now, r->probe_due) > 0) {
+                link = &r->list;
+                continue;
+            }
+            if(r->unique == 4) {
+                *link = r->list;
+                r->list = NULL;
+                r->unique = 5;
+                _r_publish(d, r);
+                continue;
+            }
+            int needed = (int)strlen(r->rr.name) + 2 + 4 + _rr_len(&r->rr);
+            if(count < sizeof(batch) / sizeof(batch[0]) &&
+               needed <= d->frame - reserved) {
+                batch[count++] = r;
+                reserved += needed;
+            } else if(needed > d->frame - 12) {
+                /* An individually oversized record cannot fit this daemon's
+                 * configured frame. Keep it pending without a tight spin. */
+                r->probe_due = d->now;
+                r->probe_due.tv_sec++;
+            }
+            link = &r->list;
+        }
+        for(i = 0; i < count; ++i) {
+            r = batch[i];
+            message_qd(m, r->rr.name, r->rr.type, (unsigned short)d->clazz);
+        }
+        for(i = 0; i < count; ++i) {
+            r = batch[i];
+            message_ns(m, r->rr.name, r->rr.type, (unsigned short)d->clazz, r->rr.ttl);
+            _a_copy(m, &r->rr);
+            r->unique++;
+            r->last_sent = d->now;
+            r->probe_due = d->now;
+            r->probe_due.tv_usec += 250000;
+            if(r->probe_due.tv_usec >= 1000000) {
+                r->probe_due.tv_usec -= 1000000;
+                r->probe_due.tv_sec++;
+            }
+            ret++;
+        }
+        /* Unselected ready records stay due now and are emitted in the next
+         * packet. Each selected record retains its own 250 ms probe spacing. */
+        if(d->probing) {
+            d->probe = d->probing->probe_due;
+            for(r = d->probing->list; r; r = r->list) {
+                if(_tvdiff(r->probe_due, d->probe) > 0)
+                    d->probe = r->probe_due;
+            }
+        }
+        if(ret)
+            return ret;
+    }
 
 	/* Process qlist for retries or expirations */
 	if (d->checkqlist && (unsigned long int)d->now.tv_sec >= d->checkqlist) {
@@ -1133,6 +1156,7 @@ mdns_record_t *mdnsd_unique(mdns_daemon_t *d, const char *host, unsigned short i
 	r->conflict = conflict;
 	r->arg = arg;
 	r->unique = 1;
+	r->probe_due = d->now;
 	_r_push(&d->probing, r);
 	d->probe.tv_sec = d->now.tv_sec;
 	d->probe.tv_usec = d->now.tv_usec;

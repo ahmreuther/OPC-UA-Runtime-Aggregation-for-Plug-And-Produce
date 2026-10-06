@@ -101,6 +101,11 @@ pub trait TransformableItem {
     }
 }
 
+/// A service result keeps one response slot for every requested operation.
+pub trait ServiceResultItem: TransformableItem {
+    fn from_status_code(status_code: StatusCode) -> Self;
+}
+
 #[instrument(level = "trace", err, ret, skip(map_db))]
 pub fn retransform_item<T>(
     item: &mut T,
@@ -160,49 +165,25 @@ where
 
 /// Return None if it should go to the aggregation server itself
 #[instrument(level = "trace", ret, skip(map_db))]
-fn determine_lower_server<'a>(
+fn determine_lower_server(
     map_db: &MapDatabaseConnection,
     deciding_field: Option<DecidingField>,
     transform_root_folder: bool,
-) -> Option<u16> {
-    return match deciding_field {
+) -> Result<Option<u16>, ServiceDelegationError> {
+    Ok(match deciding_field {
         None => None,
-        Some(DecidingField::NodeId(deciding_nodeid)) => {
+        Some(DecidingField::NodeId(node_id)) => {
             if transform_root_folder {
-                if let Some(lserver_id) = map_db
-                    .get_lserver_by_root_folder(deciding_nodeid)
-                    .unwrap_or_else(|e| {
-                        warn!("Error determining lower_server. {:?}", e);
-                        return None;
-                    })
-                {
-                    return Some(lserver_id);
-                };
+                if let Some(source) = map_db.get_lserver_by_root_folder(node_id)? {
+                    return Ok(Some(source));
+                }
             }
-            if let Some(lserver_id) = map_db
-                .get_lserver_by_namespace(&deciding_nodeid.namespace)
-                .unwrap_or_else(|e| {
-                    warn!("Error determining lower_server. {:?}", e);
-                    return None;
-                })
-            {
-                return Some(lserver_id);
-            };
-            return None;
+            map_db.get_lserver_by_namespace(&node_id.namespace)?
         }
-        Some(DecidingField::MonitoredItem(mitem)) => {
-            if let Some(lserver_id) = map_db
-                .get_lserver_by_monitored_item(mitem.sub_id, mitem.mitem_id)
-                .unwrap_or_else(|e| {
-                    warn!("Error determining lower_server. {:?}", e);
-                    return None;
-                })
-            {
-                return Some(lserver_id);
-            }
-            return None;
+        Some(DecidingField::MonitoredItem(item)) => {
+            map_db.get_lserver_by_monitored_item(item.sub_id, item.mitem_id)?
         }
-    };
+    })
 }
 
 #[instrument(level = "trace", err, ret, skip(map_db))]
@@ -221,7 +202,7 @@ where
 
     for (idx, item) in items.iter().enumerate() {
         let lserver_id_opt =
-            determine_lower_server(map_db, item.deciding_field(), transform_root_folder);
+            determine_lower_server(map_db, item.deciding_field(), transform_root_folder)?;
         if let Some(lserver_id) = lserver_id_opt {
             // Transform item to lower server namespace
             let mut item_transformed = item.clone();
@@ -238,52 +219,53 @@ where
                 if global_type_hashmap.contains_right(node_id) {
                     type_nodes.push(node_id);
                 } else if transform_root_folder && map_db.contains_root_folder(node_id)? {
+                    if map_db.get_lserver_by_root_folder(node_id)? != Some(lserver_id) {
+                        return Err(crate::server::aggregation_server::error_types::MappingError::InvalidRule(
+                            "Request combines root folders from different source servers".into(),
+                        ).into());
+                    }
                     *node_id = ObjectId::ObjectsFolder.into();
                 } else {
-                    match map_db.get_lserver_nsid(node_id.namespace) {
-                        Ok(lserver_namespace) => node_id.namespace = lserver_namespace.namespace,
-                        Err(e) => {
-                            warn!("Could not transform nodeid: {:?}", e);
-                        }
+                    let namespace = map_db.get_lserver_nsid(node_id.namespace)?;
+                    if namespace.id != lserver_id {
+                        return Err(crate::server::aggregation_server::error_types::MappingError::InvalidRule(
+                            "Request combines nodes from different source servers".into(),
+                        ).into());
                     }
+                    node_id.namespace = namespace.namespace;
                 }
             }
             // Transfrom types
             for type_node in type_nodes {
-                if let Ok(transformed_type_id) = map_db.get_lserver_type(lserver_id, type_node) {
-                    *type_node = transformed_type_id.clone();
-                }
+                *type_node = map_db.get_lserver_type(lserver_id, type_node)?;
             }
             // Transform qualified names
             for qname in item_transformed.browse_names() {
                 if qname.namespace_index == 0 {
                     continue;
                 } else {
-                    match map_db.get_lserver_nsid(qname.namespace_index) {
-                        Ok(lserver_namespace) => {
-                            qname.namespace_index = lserver_namespace.namespace
-                        }
-                        Err(e) => {
-                            warn!("Could not transform nodeid: {:?}", e);
-                        }
+                    let namespace = map_db.get_lserver_nsid(qname.namespace_index)?;
+                    if namespace.id != lserver_id {
+                        return Err(crate::server::aggregation_server::error_types::MappingError::InvalidRule(
+                            "Request combines browse names from different source servers".into(),
+                        ).into());
                     }
+                    qname.namespace_index = namespace.namespace;
                 }
             }
             // Transform monitored item ids
             for mitem in item_transformed.monitored_items() {
                 let aggserver_sub_id = mitem.sub_id;
-                if let Ok(Some(lserver_mitem_id)) =
-                    map_db.get_lserver_monitored_item(aggserver_sub_id, mitem.mitem_id)
-                {
-                    mitem.mitem_id = lserver_mitem_id;
-                } else {
-                    warn!("Error transforming monitored item.");
-                }
-                if let Ok(subscription) = map_db.get_lserver_sub_id(lserver_id, aggserver_sub_id) {
-                    mitem.sub_id = subscription.lserver_sub_id;
-                } else {
-                    warn!("Error transforming monitored item subscription.");
-                }
+                mitem.mitem_id = map_db
+                    .get_lserver_monitored_item(aggserver_sub_id, mitem.mitem_id)?
+                    .ok_or_else(|| {
+                        crate::server::aggregation_server::error_types::MappingError::InvalidRule(
+                            "Monitored item mapping disappeared".into(),
+                        )
+                    })?;
+                mitem.sub_id = map_db
+                    .get_lserver_sub_id(lserver_id, aggserver_sub_id)?
+                    .lserver_sub_id;
             }
 
             separated_items.add_item_to_lserver_list(lserver_id, idx, item_transformed);
@@ -302,7 +284,7 @@ pub fn call_agg_server<I, R, F>(
 ) -> Vec<IndexedItem<R>>
 where
     I: Debug,
-    R: TransformableItem + Debug,
+    R: ServiceResultItem + Debug,
     F: FnOnce(&Vec<I>) -> Vec<R>,
 {
     let mut results: Vec<IndexedItem<R>> = Vec::new();
@@ -315,11 +297,18 @@ where
 
         // Browse the nodes
         let response = service_call(&items);
-        for (idx, res) in std::iter::zip(indices, response) {
-            results.push(IndexedItem {
-                index: idx,
-                item: res,
-            });
+        if response.len() != indices.len() {
+            results.extend(indices.into_iter().map(|index| IndexedItem {
+                index,
+                item: R::from_status_code(StatusCode::BadUnexpectedError),
+            }));
+        } else {
+            results.extend(
+                indices
+                    .into_iter()
+                    .zip(response)
+                    .map(|(index, item)| IndexedItem { index, item }),
+            );
         }
     }
 
@@ -340,46 +329,46 @@ pub fn call_lower_server<I, R, F>(
 ) -> Result<Vec<IndexedItem<R>>, StatusCode>
 where
     I: Debug,
-    R: TransformableItem + Debug,
+    R: ServiceResultItem + Debug,
     F: Fn(&u16, Arc<RwLock<Session>>, &Vec<I>) -> Result<Option<Vec<R>>, StatusCode>,
 {
-    let mut lserver_results: Vec<IndexedItem<R>> = Vec::new();
-    for (lserver_id, vec) in lserver_items.into_iter() {
-        let lower_server_sessions = lower_server_sessions_p.read();
-        let Some(session_p) = lower_server_sessions.get(&lserver_id).cloned() else {
-            warn!("Lower server could not be found.");
-            return Err(StatusCode::BadUnexpectedError);
+    let mut lserver_results = Vec::new();
+    for (lserver_id, group) in lserver_items {
+        let (items, indices): (Vec<I>, Vec<usize>) = group
+            .into_iter()
+            .map(|item| (item.item, item.index))
+            .unzip();
+        let session = lower_server_sessions_p.read().get(&lserver_id).cloned();
+        let response = match session {
+            Some(session) => service_call(&lserver_id, session, &items),
+            None => Err(StatusCode::BadServerNotConnected),
         };
-        drop(lower_server_sessions);
-        // Separate BrowseDescriptions and indices
-        let (items, indices): (Vec<I>, Vec<usize>) =
-            vec.into_iter().map(|b| (b.item, b.index)).unzip();
-
-        // Send request to lower server
-        let response = service_call(&lserver_id, session_p.clone(), &items);
-
-        match response {
-            Ok(Some(results)) => {
-                for (idx, mut res) in std::iter::zip(indices, results) {
-                    let Ok(_) = retransform_item(&mut res, lserver_id, map_db) else {
-                        warn!("Item could not be retransformed.");
-                        continue;
-                    };
-                    lserver_results.push(IndexedItem {
-                        index: idx,
-                        item: res,
-                    });
-                }
+        let results = match response {
+            Ok(Some(results)) if results.len() == indices.len() => results,
+            response => {
+                let status = match response {
+                    Err(status) => status,
+                    _ => StatusCode::BadUnexpectedError,
+                };
+                lserver_results.extend(indices.into_iter().map(|index| IndexedItem {
+                    index,
+                    item: R::from_status_code(status),
+                }));
+                continue;
             }
-            Ok(None) => {
-                return Err(StatusCode::BadUnknownResponse);
+        };
+        for (index, mut item) in indices.into_iter().zip(results) {
+            if let Err(error) = retransform_item(&mut item, lserver_id, map_db) {
+                warn!(
+                    "Cannot transform result from source {}: {}",
+                    lserver_id, error
+                );
+                item = R::from_status_code(StatusCode::BadUnexpectedError);
             }
-            Err(status_code) => {
-                return Err(status_code);
-            }
+            lserver_results.push(IndexedItem { index, item });
         }
     }
-    return Ok(lserver_results);
+    Ok(lserver_results)
 }
 
 pub fn merge_and_order_results<R>(
@@ -411,20 +400,45 @@ pub fn delegate_service_call<I, R, F1, F2>(
 ) -> Result<Vec<R>, StatusCode>
 where
     I: TransformableItem + Debug + Clone,
-    R: TransformableItem + Debug,
+    R: ServiceResultItem + Debug,
     F1: FnOnce(&Vec<I>) -> Vec<R>,
     F2: Fn(&u16, Arc<RwLock<Session>>, &Vec<I>) -> Result<Option<Vec<R>>, StatusCode>,
 {
-    // Step 1: separate requests into multiple requests for multiple lower servers
-    let Ok(separated_items) =
-        separate_and_transform_items(aggregation_server, map_db, items, transform_root_folder)
-    else {
-        return Err(StatusCode::BadUnexpectedError);
-    };
+    // Isolate mapping errors as well as source errors to their operation slot.
+    // Never forward an unchanged aggregation NodeId or silently reroute on error.
+    let mut separated_items = SeparatedItems::new();
+    let mut failed_results = Vec::new();
+    for (index, item) in items.iter().enumerate() {
+        match separate_and_transform_items(
+            aggregation_server,
+            map_db,
+            &vec![item.clone()],
+            transform_root_folder,
+        ) {
+            Ok(separated) => {
+                for local in separated.aggserver_items {
+                    separated_items.add_item_to_aggserver_list(index, local.item);
+                }
+                for (source, group) in separated.lserver_items {
+                    for remote in group {
+                        separated_items.add_item_to_lserver_list(source, index, remote.item);
+                    }
+                }
+            }
+            Err(error) => {
+                warn!("Cannot route operation {}: {}", index, error);
+                failed_results.push(IndexedItem {
+                    index,
+                    item: R::from_status_code(StatusCode::BadUnexpectedError),
+                });
+            }
+        }
+    }
 
     // Step 2a: send read requests to own server
-    let aggserver_results =
+    let mut aggserver_results =
         call_agg_server(separated_items.aggserver_items, aggserver_service_call);
+    aggserver_results.extend(failed_results);
 
     // Step 2b: send normal browse requests to lower servers
 
@@ -442,4 +456,117 @@ where
 
     let results_formatted = merge_and_order_results(aggserver_results, lserver_results);
     return Ok(results_formatted);
+}
+
+#[cfg(test)]
+mod cross_source_tests {
+    use super::*;
+    use crate::prelude::AddressSpace;
+    use crate::types::ReadValueId;
+
+    #[derive(Clone, Debug)]
+    struct RelatedNodes {
+        target: NodeId,
+        related: NodeId,
+    }
+
+    impl TransformableItem for RelatedNodes {
+        fn node_ids(&mut self) -> Vec<&mut NodeId> {
+            vec![&mut self.target, &mut self.related]
+        }
+        fn deciding_field(&self) -> Option<DecidingField> {
+            Some(DecidingField::NodeId(&self.target))
+        }
+    }
+
+    #[test]
+    fn source_root_transformation_rejects_another_sources_root() {
+        let address_space = Arc::new(RwLock::new(AddressSpace::new()));
+        let aggregation = AggregationServer::new(&address_space).unwrap();
+        let db = aggregation.map_db_p.read().connect().unwrap();
+        let first_root = NodeId::new(1, "source-a");
+        let second_root = NodeId::new(1, "source-b");
+        let first = db.insert_lserver(&"source-a".into(), &first_root).unwrap();
+        db.insert_lserver(&"source-b".into(), &second_root).unwrap();
+        db.insert_namespace(first, 2, 1).unwrap();
+        let request = RelatedNodes {
+            target: NodeId::new(2, "value"),
+            related: second_root,
+        };
+        assert!(
+            separate_and_transform_items(&aggregation, &db, &vec![request.clone()], true).is_err()
+        );
+        let valid = RelatedNodes {
+            related: first_root,
+            ..request
+        };
+        let mut separated =
+            separate_and_transform_items(&aggregation, &db, &vec![valid], true).unwrap();
+        let mapped = separated
+            .lserver_items
+            .remove(&first)
+            .unwrap()
+            .remove(0)
+            .item;
+        assert_eq!(mapped.target, NodeId::new(1, "value"));
+        assert_eq!(mapped.related, ObjectId::ObjectsFolder.into());
+    }
+
+    #[test]
+    fn malformed_local_response_keeps_each_original_result_index() {
+        let items = vec![
+            IndexedItem { index: 1, item: () },
+            IndexedItem { index: 4, item: () },
+        ];
+        let results = call_agg_server(items, |_| vec![StatusCode::Good]);
+        assert_eq!(results.len(), 2);
+        assert_eq!(
+            (results[0].index, results[0].item),
+            (1, StatusCode::BadUnexpectedError)
+        );
+        assert_eq!(
+            (results[1].index, results[1].item),
+            (4, StatusCode::BadUnexpectedError)
+        );
+    }
+
+    #[test]
+    fn disconnected_source_preserves_order_and_local_successes() {
+        let address_space = Arc::new(RwLock::new(AddressSpace::new()));
+        let aggregation = AggregationServer::new(&address_space).unwrap();
+        let db = aggregation.map_db_p.read().connect().unwrap();
+        let source = db
+            .insert_lserver(&"source".into(), &NodeId::new(1, "source"))
+            .unwrap();
+        db.insert_namespace(source, 2, 1).unwrap();
+        let items: Vec<ReadValueId> = [
+            NodeId::new(2, "first"),
+            NodeId::new(1, "local"),
+            NodeId::new(2, "second"),
+        ]
+        .into_iter()
+        .map(Into::into)
+        .collect();
+        let results: Vec<StatusCode> = delegate_service_call(
+            &db,
+            &aggregation,
+            &items,
+            false,
+            |local| {
+                assert_eq!(local.len(), 1);
+                assert_eq!(local[0].node_id, NodeId::new(1, "local"));
+                vec![StatusCode::Good]
+            },
+            |_, _, _| panic!("an unavailable source must not be called"),
+        )
+        .unwrap();
+        assert_eq!(
+            results,
+            vec![
+                StatusCode::BadServerNotConnected,
+                StatusCode::Good,
+                StatusCode::BadServerNotConnected
+            ]
+        );
+    }
 }

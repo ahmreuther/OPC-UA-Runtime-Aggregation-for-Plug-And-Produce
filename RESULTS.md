@@ -1,34 +1,35 @@
-# Principal results and limits
+# Results represented by v0.2.0
 
-This file summarizes only results backed by the curated run records. The compact source tables are in `results/`; the raw measurements and public manifests are in the companion data package.
+The current public subset is selected in `Validation/current_20261006/cohort.json`. Numerical observations are retained unchanged. Public result projections are explicitly distinguished from full raw runtime snapshots. The original release and its historical results remain accessible at tag `v0.1.0`.
 
-## E01 — cross-domain semantic integration
+## Structural integration
 
-Run `20260729T121702.782581Z-9b66527e` used 16 emulated sources from robotics, machine vision, additive manufacturing, and woodworking. All 16 were discovered, accepted, and completed aggregation. The run generated 2,756 rules and passed all 17 predefined acceptance criteria, including type integrity, namespace-aware rule semantics, source-identity separation, and the machine-vision assignment contract.
+Three independently initialized local Windows runs each used the same 16 emulated sources from four domains. All 17 semantic criteria passed. Every run produced 2756 detailed and executable mappings, distributed as 612 Robotics, 44 Machine Vision, 1836 Additive Manufacturing, and 264 Woodworking mappings. Differences reflect the instantiated structures and traversal policy. They do not rank Companion Specifications or establish comparative domain performance. The compact public records report these semantic validation outcomes, but do not permit a complete rerun of the semantic validator without the deliberately excluded model and runtime artifacts.
 
-This supports semantic integration for the evaluated models and fixture topology. It does not establish compatibility with arbitrary information models.
+## Physical configuration
 
-## E02 — three physical robots
+The unchanged E02 record is one joint run with three physical robots. It checked 55 generated files and 52 mesh references and verified unchanged delivery of generated bundles to the target frontend. The robots are three cases within one run, not three independent repetitions. The result ends at artifact provisioning and does not validate kinematics, robot motion, or configuration of other device classes. Robot assets are not redistributed.
 
-Run `20260716T155244.8161167Z-e02-live` was one joint functional run with EVA Automata, Franka Research 3, and UR5e. The target application created one source-associated URDF bundle per robot. The bounded validation checked 55 files, 52 distinct mesh references, XML parsing, parent/child resolution, local mesh containment, HTTP delivery, and hash equality.
+## Read latency
 
-The result has `n=1`. No claim of repeatability, arbitrary-robot support, kinematic correctness, skill execution, or robot control is made. Robot models and meshes are not redistributed.
+Three fresh aggregation, discovery, and client initializations each recorded 10,000 randomized direct and aggregated Read pairs after 1000 warmup Reads per path. All 60,000 measured Reads succeeded, with matching values in every pair. Mean paired additional latency was 0.79, 0.61, and 1.02 ms. Aggregated P99 was larger in every session. Source servers and network were retained, so the results characterize repeated sessions in one deployment, not independent hardware environments or guaranteed latency bounds. An earlier standby interrupted attempt remains distinct and is not pooled with this cohort.
 
-## E03 — paired Read latency
+## Performance and resource use
 
-The run contains 10,000 randomized paired observations:
+The evaluated incremental implementation has 21 complete recordings, with three at each source count 1, 5, 10, 25, 50, 75, and 100. The 798 integrated source instances are 3 × (1 + 5 + 10 + 25 + 50 + 75 + 100). These records comprise five completed initial attempts and sixteen completions from a predefined continuation. Sixteen unsuccessful initial attempts remain documented separately within the 37 attempt campaign.
 
-| Path | Mean (ms) | Median (ms) | P90 (ms) | P99 (ms) |
-| --- | ---: | ---: | ---: | ---: |
-| Direct | 6.974 | 6.534 | 7.437 | 13.664 |
-| Aggregated | 7.749 | 6.843 | 7.745 | 51.516 |
+At 100 sources, elapsed time from recording start to final integration was 562.68 ± 10.47 s, including startup and discovery. Recorded processing phases totaled 340.25 ± 9.54 s. Mean rule generation and final rule storage were 108.71 s and 130.29 s, respectively. These are different timing windows and must not be substituted for one another. Uncertainty denotes sample standard deviation across three runs.
 
-The mean paired overhead was 0.775 ms. These are measurements of one hardware/software setup and workload; the higher aggregated-path tail must not be generalized beyond that scope.
+Mean maximum resident memory, summed over the aggregation and discovery processes, was 4911.3 ± 103.1 MiB at 100 sources. Internal allocation shares and leak absence were not established. The resource recordings cover final integration and subsequent observation. The manuscript's 750 s plotting window is only a display choice after the integrations had completed. Numerical summaries use the full specified recording windows. No matched algorithmic speedup or general capacity limit follows from these measurements.
 
-## E04/E05 — distributed source-count matrix
+## Supervision and concurrent registration
 
-The curated matrix `pdist-pilinux-20260730T091252Z-89617` contains three runs at each requested count 1, 5, 10, 25, 50, 75, and 100, for 21 runs in total. Each run retained 2,000 resource samples, and each reached the requested source-listening, LDS-registration, and terminal-aggregation count.
+Three local synthetic supervision runs each completed five healthy integrations. All 181 sampled reference Reads succeeded. Separate blocked worker tests produced controlled process termination in all three repetitions. This is a service interruption requiring external restart, not continuous availability.
 
-At 100 requested sources, total processing took 6,882.304–7,068.422 s across the three runs, or 68.823–70.684 s per source. Rule generation accounted for about 85% of those totals; this percentage is a derived interpretation of the phase table. The result demonstrates eventual completion under the evaluated serialized provisioning path. It is not a recommended operating point or a concurrency result.
+All three application trials with 100 overlapping direct registration calls completed all 100 integrations and passed live semantic checks. **Two of the three trials passed all acceptance criteria.** One was rejected because of a discovery handshake timeout after integration. The recorded outcome is not replaced or relabelled. Registration overlap is not simultaneous packet arrival or a test of mDNS advertisement bursts.
 
-For the fixed 0–1,800 s resource-analysis window, high-count scenarios have reduced simultaneous repetition coverage because processing continued beyond the window. Consult the coverage columns in `results/E04/resource_usage_summary.csv`; do not interpret the 100-source curve as a three-run pointwise mean throughout.
+Three further trials used 24 sources and admission capacity 4 with a controlled Browse interruption. Each recorded one failed attempt, confirmed termination and cleanup before subsequent integration, successful retry, and completion of all requested sources. All three trials passed. The failure occurred before the configured outer attempt deadline. These trials do not demonstrate that deadline expiring or arbitrary failure recovery.
+
+## Implementation attribution
+
+The current code includes the later admission and supervision mechanism. The performance cohort evaluated the earlier incremental implementation. Current source, historical binaries, and separately initialized cohorts are not interchangeable. See the public cohort provenance and `EXPERIMENT_VERSIONS.md`.

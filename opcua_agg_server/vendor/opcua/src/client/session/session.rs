@@ -9,7 +9,7 @@
 //! and events.
 use std::{
     cmp,
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     result::Result,
     str::FromStr,
     sync::{mpsc::SyncSender, Arc},
@@ -31,7 +31,7 @@ use crate::{
             services::*,
             session_debug, session_error,
             session_state::{ConnectionState, SessionState},
-            session_trace, session_warn,
+            session_trace, session_warn, SessionOperationControl,
         },
         session_retry_policy::{Answer, SessionRetryPolicy},
         subscription::{self, Subscription},
@@ -108,6 +108,8 @@ pub struct Session {
     session_state: Arc<RwLock<SessionState>>,
     /// Subscriptions state.
     subscription_state: Arc<RwLock<SubscriptionState>>,
+    /// Shadows whose recreation failed; kept separately so reused source IDs cannot overwrite them.
+    pending_recreation: Mutex<Vec<Subscription>>,
     /// Transport layer.
     transport: TcpTransport,
     /// Certificate store.
@@ -120,6 +122,7 @@ pub struct Session {
     ignore_clock_skew: bool,
     /// Maximum time to wait for one OPC UA service response.
     request_timeout: u32,
+    operation_control: Option<SessionOperationControl>,
     /// Maximum complete message size advertised to the server.
     max_message_size: usize,
     /// Maximum number of message chunks advertised to the server.
@@ -128,6 +131,10 @@ pub struct Session {
     single_threaded_executor: bool,
     /// Tokio runtime
     runtime: Arc<Mutex<tokio::runtime::Runtime>>,
+    runtime_handle: tokio::runtime::Handle,
+    session_activity_task: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    subscription_activity_task: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    revised_session_timeout: Mutex<f64>,
 }
 
 impl Drop for Session {
@@ -198,6 +205,8 @@ impl Session {
             .build()
             .unwrap();
 
+        let runtime_handle = runtime.handle().clone();
+        let revised_session_timeout = session_retry_policy.session_timeout();
         Session {
             application_description,
             session_name,
@@ -205,36 +214,40 @@ impl Session {
             session_state,
             certificate_store,
             subscription_state,
+            pending_recreation: Mutex::new(Vec::new()),
             transport,
             secure_channel,
             session_retry_policy: Arc::new(Mutex::new(session_retry_policy)),
             ignore_clock_skew,
             request_timeout,
+            operation_control: None,
             max_message_size,
             max_chunk_count,
             single_threaded_executor,
             runtime: Arc::new(Mutex::new(runtime)),
+            runtime_handle,
+            session_activity_task: Mutex::new(None),
+            subscription_activity_task: Mutex::new(None),
+            revised_session_timeout: Mutex::new(revised_session_timeout),
         }
     }
 
     fn reset(&mut self) {
+        if let Some(task) = self.session_activity_task.lock().take() {
+            task.abort();
+        }
+        if let Some(task) = self.subscription_activity_task.lock().take() {
+            task.abort();
+        }
         // Clear the existing secure channel state
         {
             let mut secure_channel = trace_write_lock!(self.secure_channel);
             secure_channel.clear_security_token();
         }
 
-        // Create a new session state
-        self.session_state = Arc::new(RwLock::new(SessionState::new(
-            self.ignore_clock_skew,
-            self.secure_channel.clone(),
-            self.subscription_state.clone(),
-            self.request_timeout,
-            self.max_message_size,
-            self.max_chunk_count,
-        )));
-
-        // Keep the existing transport, we should never drop a tokio runtime from a sync function
+        // TcpTransport retains this Arc and its message queue. Replacing the
+        // Arc would send reconnect requests to a queue with no transport reader.
+        self.session_state.write().reset_connection();
     }
 
     /// Connects to the server, creates and activates a session. If there
@@ -321,7 +334,8 @@ impl Session {
             // Connect to server (again)
             self.connect_no_retry()?;
 
-            // Attempt to reactivate the existing session
+            // Reactivation keeps source subscription IDs stable when possible.
+            let mut new_session = false;
             match self.activate_session() {
                 Err(status_code) => {
                     // Activation didn't work, so create a new session
@@ -335,6 +349,7 @@ impl Session {
                     self.create_session()?;
                     session_debug!(self, "activate_session");
                     self.activate_session()?;
+                    new_session = true;
                     session_debug!(self, "reconnect should be complete");
                 }
                 Ok(_) => {
@@ -342,119 +357,209 @@ impl Session {
                 }
             }
             session_debug!(self, "transfer_subscriptions_from_old_session");
-            self.transfer_subscriptions_from_old_session()?;
+            self.transfer_subscriptions_from_old_session(new_session)?;
+            let timeout = *self.revised_session_timeout.lock();
+            self.spawn_session_activity_task(timeout);
+            self.spawn_subscription_activity_task();
+            if self.subscription_state.read().subscription_ids().is_some() {
+                let _ = self.session_state.write().async_publish();
+            }
             Ok(())
         }
     }
 
     /// This code attempts to take the existing subscriptions created by a previous session and
     /// either transfer them to this session, or construct them from scratch.
-    fn transfer_subscriptions_from_old_session(&mut self) -> Result<(), StatusCode> {
-        let subscription_state = self.subscription_state.clone();
-
-        let subscription_ids = {
-            let subscription_state = trace_read_lock!(subscription_state);
-            subscription_state.subscription_ids()
-        };
-
-        // Start by getting the subscription ids
-        if let Some(subscription_ids) = subscription_ids {
-            // Try to use TransferSubscriptions to move subscriptions_ids over. If this
-            // works then there is nothing else to do.
-            let mut subscription_ids_to_recreate =
-                subscription_ids.iter().copied().collect::<HashSet<u32>>();
-            if let Ok(transfer_results) = self.transfer_subscriptions(&subscription_ids, true) {
-                session_debug!(self, "transfer_results = {:?}", transfer_results);
-                transfer_results.iter().enumerate().for_each(|(i, r)| {
-                    if r.status_code.is_good() {
-                        // Subscription was transferred so it does not need to be recreated
-                        subscription_ids_to_recreate.remove(&subscription_ids[i]);
-                    }
-                });
-            }
-
-            // But if it didn't work, then some or all subscriptions have to be remade.
-            if !subscription_ids_to_recreate.is_empty() {
-                session_warn!(self, "Some or all of the existing subscriptions could not be transferred and must be created manually");
-            }
-
-            // Now create any subscriptions that could not be transferred
-            subscription_ids_to_recreate
-                .iter()
-                .for_each(|subscription_id| {
-                    info!("Recreating subscription {}", subscription_id);
-                    // Remove the subscription data, create it again from scratch
-                    let deleted_subscription = {
-                        let mut subscription_state = trace_write_lock!(subscription_state);
-                        subscription_state.delete_subscription(*subscription_id)
-                    };
-
-                    if let Some(subscription) = deleted_subscription {
-                        // Attempt to replicate the subscription (subscription id will be new)
-                        if let Ok(subscription_id) = self.create_subscription_inner(
-                            subscription.publishing_interval(),
-                            subscription.lifetime_count(),
-                            subscription.max_keep_alive_count(),
-                            subscription.max_notifications_per_publish(),
-                            subscription.priority(),
-                            subscription.publishing_enabled(),
-                            subscription.notification_callback(),
-                        ) {
-                            info!("New subscription created with id {}", subscription_id);
-
-                            // For each monitored item
-                            let items_to_create = subscription
-                                .monitored_items()
-                                .iter()
-                                .map(|(_, item)| MonitoredItemCreateRequest {
-                                    item_to_monitor: item.item_to_monitor().clone(),
-                                    monitoring_mode: item.monitoring_mode(),
-                                    requested_parameters: MonitoringParameters {
-                                        client_handle: item.client_handle(),
-                                        sampling_interval: item.sampling_interval(),
-                                        filter: ExtensionObject::null(),
-                                        queue_size: item.queue_size() as u32,
-                                        discard_oldest: true,
-                                    },
-                                })
-                                .collect::<Vec<MonitoredItemCreateRequest>>();
-                            let _ = self.create_monitored_items(
-                                subscription_id,
-                                TimestampsToReturn::Both,
-                                &items_to_create,
-                            );
-
-                            // Recreate any triggers for the monitored item. This code assumes monitored item
-                            // ids are the same value as they were in the previous subscription.
-                            subscription.monitored_items().iter().for_each(|(_, item)| {
-                                let triggered_items = item.triggered_items();
-                                if !triggered_items.is_empty() {
-                                    let links_to_add =
-                                        triggered_items.iter().copied().collect::<Vec<u32>>();
-                                    let _ = self.set_triggering(
-                                        subscription_id,
-                                        item.id(),
-                                        links_to_add.as_slice(),
-                                        &[],
-                                    );
-                                }
-                            });
-                        } else {
-                            session_warn!(
-                                self,
-                                "Could not create a subscription from the existing subscription {}",
-                                subscription_id
-                            );
+    fn transfer_subscriptions_from_old_session(
+        &mut self,
+        new_session: bool,
+    ) -> Result<(), StatusCode> {
+        if new_session {
+            let subscription_ids = self
+                .subscription_state
+                .read()
+                .subscription_ids()
+                .unwrap_or_default();
+            let mut recreate: HashSet<u32> = subscription_ids.iter().copied().collect();
+            if !subscription_ids.is_empty() {
+                if let Ok(results) = self.transfer_subscriptions(&subscription_ids, true) {
+                    for (id, result) in subscription_ids.iter().zip(results) {
+                        if result.status_code.is_good() {
+                            recreate.remove(id);
                         }
-                    } else {
-                        panic!(
-                            "Subscription {}, doesn't exist although it should",
-                            subscription_id
-                        );
                     }
-                });
+                }
+            }
+            // Detach every old shadow before allocating replacement IDs. A
+            // restarted server may reuse IDs belonging to a different old sub.
+            let mut state = self.subscription_state.write();
+            for id in recreate {
+                if let Some(subscription) = state.delete_subscription(id) {
+                    self.pending_recreation.lock().push(subscription);
+                }
+            }
+        }
+
+        // Invalidate all old mappings first; source subscription IDs can swap
+        // between subscriptions during reconstruction.
+        for subscription in self.pending_recreation.lock().iter() {
+            subscription
+                .notification_callback()
+                .lock()
+                .on_subscription_recreation_started(subscription.subscription_id())?;
+        }
+        loop {
+            // Release the pending-list lock before network I/O and callbacks.
+            let subscription = self.pending_recreation.lock().pop();
+            let Some(subscription) = subscription else {
+                break;
+            };
+            if let Err(status) = self.recreate_subscription(&subscription) {
+                // Preserve complete metadata and old item IDs for the next retry,
+                // independently of any new IDs already used by successful subs.
+                self.pending_recreation.lock().push(subscription);
+                return Err(status);
+            }
         }
         Ok(())
+    }
+
+    /// Cancel all source shadows owned by an upper subscription. The caller
+    /// holds the source session read lock, so reconnection cannot replace IDs
+    /// between selecting and deleting them. Pending shadows never supply an ID
+    /// for a remote delete: that old ID may now belong to a different owner.
+    pub(crate) fn delete_subscription_context(&self, context_id: u32) -> Result<(), StatusCode> {
+        self.pending_recreation.lock().retain(|subscription| {
+            subscription
+                .notification_callback()
+                .lock()
+                .subscription_context_id()
+                != Some(context_id)
+        });
+        let current_ids: Vec<_> = {
+            let state = self.subscription_state.read();
+            state
+                .subscription_ids()
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|id| {
+                    state.get(*id).map_or(false, |subscription| {
+                        subscription
+                            .notification_callback()
+                            .lock()
+                            .subscription_context_id()
+                            == Some(context_id)
+                    })
+                })
+                .collect()
+        };
+        let mut first_error = None;
+        for id in current_ids {
+            if self.is_connected() {
+                match self.delete_subscription(id) {
+                    Ok(status) if status.is_good() => {}
+                    Ok(status) | Err(status) => {
+                        first_error.get_or_insert(status);
+                    }
+                }
+            }
+            // Owner cancellation is final even when the transport is offline;
+            // retaining this shadow would recreate the deleted upper subscription.
+            self.subscription_state.write().delete_subscription(id);
+        }
+        first_error.map_or(Ok(()), Err)
+    }
+
+    fn recreate_subscription(&self, subscription: &Subscription) -> Result<(), StatusCode> {
+        let new_id = self.create_subscription_inner(
+            subscription.publishing_interval(),
+            subscription.lifetime_count(),
+            subscription.max_keep_alive_count(),
+            subscription.max_notifications_per_publish(),
+            subscription.priority(),
+            subscription.publishing_enabled(),
+            subscription.notification_callback(),
+        )?;
+        let rebuild_result = (|| {
+            let mut recreated = Vec::new();
+            // TimestampsToReturn belongs to the request, but can differ across
+            // monitored items created or modified in separate calls.
+            for timestamps in [
+                TimestampsToReturn::Source,
+                TimestampsToReturn::Server,
+                TimestampsToReturn::Both,
+                TimestampsToReturn::Neither,
+            ] {
+                let items: Vec<_> = subscription
+                    .monitored_items()
+                    .values()
+                    .filter(|item| item.timestamps_to_return() == timestamps)
+                    .collect();
+                if items.is_empty() {
+                    continue;
+                }
+                let requests: Vec<_> = items.iter().map(|item| item.recreation_request()).collect();
+                let results = self.create_monitored_items(new_id, timestamps, &requests)?;
+                if results.len() != items.len() {
+                    return Err(StatusCode::BadUnexpectedError);
+                }
+                recreated.extend(
+                    items
+                        .iter()
+                        .zip(results)
+                        .map(|(item, result)| (item.id(), item.client_handle(), result)),
+                );
+            }
+            let new_item_ids: HashMap<_, _> = recreated
+                .iter()
+                .filter(|(_, _, result)| result.status_code.is_good())
+                .map(|(old, _, result)| (*old, result.monitored_item_id))
+                .collect();
+            for item in subscription.monitored_items().values() {
+                let Some(&trigger_id) = new_item_ids.get(&item.id()) else {
+                    continue;
+                };
+                let links: Vec<_> = item
+                    .triggered_items()
+                    .iter()
+                    .filter_map(|old| new_item_ids.get(old).copied())
+                    .collect();
+                if !links.is_empty() {
+                    let (results, _) = self.set_triggering(new_id, trigger_id, &links, &[])?;
+                    if results.as_ref().map_or(true, |results| {
+                        results.len() != links.len() || results.iter().any(|status| status.is_bad())
+                    }) {
+                        return Err(StatusCode::BadUnexpectedError);
+                    }
+                }
+            }
+            subscription
+                .notification_callback()
+                .lock()
+                .on_subscription_recreated(subscription.subscription_id(), new_id, &recreated)
+        })();
+        if rebuild_result.is_err() {
+            // Never retain a partial replacement beside its original shadow.
+            // Delete best-effort; closing the failed session also deletes source subscriptions.
+            let _ = self.delete_subscription(new_id);
+            self.subscription_state.write().delete_subscription(new_id);
+        }
+        rebuild_result
+    }
+
+    /// Configure before connecting; clones share the onboarding deadline and cancellation flag.
+    pub(crate) fn set_operation_control(&mut self, control: Option<SessionOperationControl>) {
+        self.operation_control = control.clone();
+        self.session_state
+            .write()
+            .set_operation_control(control.clone());
+        self.transport.set_operation_control(control);
+    }
+
+    fn check_operation(&self) -> Result<(), StatusCode> {
+        self.operation_control
+            .as_ref()
+            .map_or(Ok(()), |control| control.check())
     }
 
     /// Connects to the server using the retry policy to repeat connecting until such time as it
@@ -462,6 +567,7 @@ impl Session {
     /// communicated by the status code in the result.
     pub fn connect(&self) -> Result<(), StatusCode> {
         loop {
+            self.check_operation()?;
             match self.connect_no_retry() {
                 Ok(_) => {
                     info!("Connect was successful");
@@ -471,6 +577,7 @@ impl Session {
                 }
                 Err(status_code) => {
                     self.disconnect();
+                    self.check_operation()?;
                     let mut session_retry_policy = trace_lock!(self.session_retry_policy);
                     session_retry_policy.increment_retry_count();
                     session_warn!(
@@ -492,7 +599,14 @@ impl Session {
                         Answer::WaitFor(sleep_for) => {
                             // Sleep for the instructed interval before looping around and trying
                             // once more.
-                            thread::sleep(Duration::from_millis(sleep_for as u64));
+                            let wake = Instant::now() + Duration::from_millis(sleep_for as u64);
+                            while Instant::now() < wake {
+                                self.check_operation()?;
+                                thread::sleep(
+                                    wake.saturating_duration_since(Instant::now())
+                                        .min(Duration::from_millis(25)),
+                                );
+                            }
                         }
                     }
                 }
@@ -510,6 +624,7 @@ impl Session {
     /// * `Err(StatusCode)` - reason for failure
     ///
     pub fn connect_no_retry(&self) -> Result<(), StatusCode> {
+        self.check_operation()?;
         let endpoint_url = self.session_info.endpoint.endpoint_url.clone();
         info!("Connect");
         let security_policy =
@@ -571,6 +686,9 @@ impl Session {
 
             self.transport.wait_for_disconnect();
             self.on_connection_status_change(false);
+        } else {
+            // Also reap failed/connecting transports; no worker may outlive cleanup.
+            self.transport.wait_for_disconnect();
         }
     }
 
@@ -720,6 +838,7 @@ impl Session {
     /// * `false` - if no action was performed during the poll and the poll slept
     ///
     pub async fn poll(&mut self) -> Result<bool, ()> {
+        self.check_operation().map_err(|_| ())?;
         let did_something = if self.is_connected() {
             let mut session_state = trace_write_lock!(self.session_state);
             session_state.handle_publish_responses()
@@ -780,6 +899,7 @@ impl Session {
     /// timeout then this code will not care and will continue to ping at the original rate.
     fn spawn_session_activity_task(&self, session_timeout: f64) {
         session_debug!(self, "spawn_session_activity_task({})", session_timeout);
+        *self.revised_session_timeout.lock() = session_timeout;
 
         let connection_state = {
             let session_state = trace_read_lock!(self.session_state);
@@ -799,8 +919,7 @@ impl Session {
         );
 
         let id = format!("session-activity-thread-{:?}", thread::current().id());
-        let runtime = trace_lock!(self.runtime);
-        runtime.spawn(async move {
+        let task = self.runtime_handle.spawn(async move {
             register_runtime_component!(&id);
             // The timer runs at a higher frequency timer loop to terminate as soon after the session
             // state has terminated. Each time it runs it will test if the interval has elapsed or not.
@@ -852,6 +971,9 @@ impl Session {
             info!("Session activity timer task is finished");
             deregister_runtime_component!(&id);
         });
+        if let Some(previous) = self.session_activity_task.lock().replace(task) {
+            previous.abort();
+        }
     }
 
     /// Start a task that will periodically send a publish request to keep the subscriptions alive.
@@ -870,8 +992,7 @@ impl Session {
         let subscription_state = self.subscription_state.clone();
 
         let id = format!("subscription-activity-thread-{:?}", thread::current().id());
-        let runtime = trace_lock!(self.runtime);
-        runtime.spawn(async move {
+        let task = self.runtime_handle.spawn(async move {
             register_runtime_component!(&id);
 
             // The timer runs at a higher frequency timer loop to terminate as soon after the session
@@ -915,6 +1036,9 @@ impl Session {
             info!("Subscription activity timer task is finished");
             deregister_runtime_component!(&id);
         });
+        if let Some(previous) = self.subscription_activity_task.lock().replace(task) {
+            previous.abort();
+        }
     }
 
     /// This is the internal handler for create subscription that receives the callback wrapped up and reference counted.
@@ -1668,9 +1792,20 @@ impl SubscriptionService for Session {
             if let SupportedMessage::SetPublishingModeResponse(response) = response {
                 process_service_result(&response.response_header)?;
                 {
-                    // Clear out all subscriptions, assuming the delete worked
+                    let results = response
+                        .results
+                        .as_ref()
+                        .ok_or(StatusCode::BadUnexpectedError)?;
+                    if results.len() != subscription_ids.len() {
+                        return Err(StatusCode::BadUnexpectedError);
+                    }
+                    let successful: Vec<_> = subscription_ids
+                        .iter()
+                        .zip(results)
+                        .filter_map(|(id, status)| status.is_good().then_some(*id))
+                        .collect();
                     let mut subscription_state = trace_write_lock!(self.subscription_state);
-                    subscription_state.set_publishing_mode(subscription_ids, publishing_enabled);
+                    subscription_state.set_publishing_mode(&successful, publishing_enabled);
                 }
                 session_debug!(self, "set_publishing_mode success");
                 Ok(response.results.unwrap())
@@ -1746,11 +1881,19 @@ impl SubscriptionService for Session {
             if let SupportedMessage::DeleteSubscriptionsResponse(response) = response {
                 process_service_result(&response.response_header)?;
                 {
-                    // Clear out deleted subscriptions, assuming the delete worked
+                    let results = response
+                        .results
+                        .as_ref()
+                        .ok_or(StatusCode::BadUnexpectedError)?;
+                    if results.len() != subscription_ids.len() {
+                        return Err(StatusCode::BadUnexpectedError);
+                    }
                     let mut subscription_state = trace_write_lock!(self.subscription_state);
-                    subscription_ids.iter().for_each(|id| {
-                        let _ = subscription_state.delete_subscription(*id);
-                    });
+                    for (id, status) in subscription_ids.iter().zip(results) {
+                        if status.is_good() {
+                            subscription_state.delete_subscription(*id);
+                        }
+                    }
                 }
                 session_debug!(self, "delete_subscriptions success");
                 Ok(response.results.unwrap())
@@ -1901,6 +2044,9 @@ impl MonitoredItemService for Session {
             if let SupportedMessage::CreateMonitoredItemsResponse(response) = response {
                 process_service_result(&response.response_header)?;
                 if let Some(ref results) = response.results {
+                    if results.len() != items_to_create.len() {
+                        return Err(StatusCode::BadUnexpectedError);
+                    }
                     session_debug!(
                         self,
                         "create_monitored_items, {} items created",
@@ -1910,6 +2056,7 @@ impl MonitoredItemService for Session {
                     let items_to_create = items_to_create
                         .iter()
                         .zip(results)
+                        .filter(|(_, result)| result.status_code.is_good())
                         .map(|(i, r)| subscription::CreateMonitoredItem {
                             id: r.monitored_item_id,
                             client_handle: i.requested_parameters.client_handle,
@@ -1918,6 +2065,8 @@ impl MonitoredItemService for Session {
                             monitoring_mode: i.monitoring_mode,
                             queue_size: r.revised_queue_size,
                             sampling_interval: r.revised_sampling_interval,
+                            filter: i.requested_parameters.filter.clone(),
+                            timestamps_to_return,
                         })
                         .collect::<Vec<subscription::CreateMonitoredItem>>();
                     {
@@ -1931,7 +2080,7 @@ impl MonitoredItemService for Session {
                         "create_monitored_items, success but no monitored items were created"
                     );
                 }
-                Ok(response.results.unwrap())
+                response.results.ok_or(StatusCode::BadUnexpectedError)
             } else {
                 session_error!(self, "create_monitored_items failed {:?}", response);
                 Err(process_unexpected_response(response))
@@ -1968,10 +2117,6 @@ impl MonitoredItemService for Session {
             );
             Err(StatusCode::BadNothingToDo)
         } else {
-            let monitored_item_ids = items_to_modify
-                .iter()
-                .map(|i| i.monitored_item_id)
-                .collect::<Vec<u32>>();
             let request = ModifyMonitoredItemsRequest {
                 request_header: self.make_request_header(),
                 subscription_id,
@@ -1983,13 +2128,21 @@ impl MonitoredItemService for Session {
                 process_service_result(&response.response_header)?;
                 if let Some(ref results) = response.results {
                     // Set the items in our internal state
-                    let items_to_modify = monitored_item_ids
+                    if results.len() != items_to_modify.len() {
+                        return Err(StatusCode::BadUnexpectedError);
+                    }
+                    let items_to_modify = items_to_modify
                         .iter()
                         .zip(results.iter())
-                        .map(|(id, r)| subscription::ModifyMonitoredItem {
-                            id: *id,
+                        .filter(|(_, result)| result.status_code.is_good())
+                        .map(|(item, r)| subscription::ModifyMonitoredItem {
+                            id: item.monitored_item_id,
+                            client_handle: item.requested_parameters.client_handle,
                             queue_size: r.revised_queue_size,
                             sampling_interval: r.revised_sampling_interval,
+                            discard_oldest: item.requested_parameters.discard_oldest,
+                            filter: item.requested_parameters.filter.clone(),
+                            timestamps_to_return,
                         })
                         .collect::<Vec<subscription::ModifyMonitoredItem>>();
                     {
@@ -1999,7 +2152,7 @@ impl MonitoredItemService for Session {
                     }
                 }
                 session_debug!(self, "modify_monitored_items, success");
-                Ok(response.results.unwrap())
+                response.results.ok_or(StatusCode::BadUnexpectedError)
             } else {
                 session_error!(self, "modify_monitored_items failed {:?}", response);
                 Err(process_unexpected_response(response))
@@ -2028,7 +2181,22 @@ impl MonitoredItemService for Session {
             };
             let response = self.send_request(request)?;
             if let SupportedMessage::SetMonitoringModeResponse(response) = response {
-                Ok(response.results.unwrap())
+                process_service_result(&response.response_header)?;
+                let results = response.results.ok_or(StatusCode::BadUnexpectedError)?;
+                if results.len() != monitored_item_ids.len() {
+                    return Err(StatusCode::BadUnexpectedError);
+                }
+                let successful: Vec<_> = monitored_item_ids
+                    .iter()
+                    .zip(&results)
+                    .filter_map(|(id, status)| status.is_good().then_some(*id))
+                    .collect();
+                self.subscription_state.write().set_monitoring_mode(
+                    subscription_id,
+                    &successful,
+                    monitoring_mode,
+                );
+                Ok(results)
             } else {
                 session_error!(self, "set_monitoring_mode failed {:?}", response);
                 Err(process_unexpected_response(response))
@@ -2068,13 +2236,29 @@ impl MonitoredItemService for Session {
             };
             let response = self.send_request(request)?;
             if let SupportedMessage::SetTriggeringResponse(response) = response {
-                // Update client side state
-                let mut subscription_state = trace_write_lock!(self.subscription_state);
-                subscription_state.set_triggering(
+                process_service_result(&response.response_header)?;
+                let add_results = response.add_results.as_deref().unwrap_or_default();
+                let remove_results = response.remove_results.as_deref().unwrap_or_default();
+                if add_results.len() != links_to_add.len()
+                    || remove_results.len() != links_to_remove.len()
+                {
+                    return Err(StatusCode::BadUnexpectedError);
+                }
+                let added: Vec<_> = links_to_add
+                    .iter()
+                    .zip(add_results)
+                    .filter_map(|(id, status)| status.is_good().then_some(*id))
+                    .collect();
+                let removed: Vec<_> = links_to_remove
+                    .iter()
+                    .zip(remove_results)
+                    .filter_map(|(id, status)| status.is_good().then_some(*id))
+                    .collect();
+                self.subscription_state.write().set_triggering(
                     subscription_id,
                     triggering_item_id,
-                    links_to_add,
-                    links_to_remove,
+                    &added,
+                    &removed,
                 );
                 Ok((response.add_results, response.remove_results))
             } else {
@@ -2120,12 +2304,23 @@ impl MonitoredItemService for Session {
             let response = self.send_request(request)?;
             if let SupportedMessage::DeleteMonitoredItemsResponse(response) = response {
                 process_service_result(&response.response_header)?;
-                if response.results.is_some() {
-                    let mut subscription_state = trace_write_lock!(self.subscription_state);
-                    subscription_state.delete_monitored_items(subscription_id, items_to_delete);
+                let results = response
+                    .results
+                    .as_ref()
+                    .ok_or(StatusCode::BadUnexpectedError)?;
+                if results.len() != items_to_delete.len() {
+                    return Err(StatusCode::BadUnexpectedError);
                 }
+                let successful: Vec<_> = items_to_delete
+                    .iter()
+                    .zip(results)
+                    .filter_map(|(id, status)| status.is_good().then_some(*id))
+                    .collect();
+                self.subscription_state
+                    .write()
+                    .delete_monitored_items(subscription_id, &successful);
                 session_debug!(self, "delete_monitored_items, success");
-                Ok(response.results.unwrap())
+                response.results.ok_or(StatusCode::BadUnexpectedError)
             } else {
                 session_error!(self, "delete_monitored_items failed {:?}", response);
                 Err(process_unexpected_response(response))
@@ -2443,5 +2638,132 @@ impl AttributeService for Session {
                 Err(process_unexpected_response(response))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod reconnect_runtime_tests {
+    use super::*;
+
+    fn session(pki: &std::path::Path) -> Session {
+        Session::new(
+            ApplicationDescription {
+                application_uri: "urn:reconnect-test".into(),
+                product_uri: "test".into(),
+                application_name: LocalizedText::null(),
+                application_type: ApplicationType::Client,
+                gateway_server_uri: UAString::null(),
+                discovery_profile_uri: UAString::null(),
+                discovery_urls: None,
+            },
+            "reconnect-test",
+            Arc::new(RwLock::new(CertificateStore::new(pki))),
+            EndpointDescription::from("opc.tcp://127.0.0.1:48999").into(),
+            SessionRetryPolicy::default(),
+            DecodingOptions::default(),
+            5000,
+            false,
+            true,
+        )
+    }
+
+    #[test]
+    fn reconnect_reset_preserves_transport_state_and_reactivation_token() {
+        let temp = tempdir::TempDir::new("reconnect-state").unwrap();
+        let mut session = session(temp.path());
+        let state = session.session_state.clone();
+        let queue = state.read().message_queue.clone();
+        state.write().set_session_id(NodeId::new(1, 123));
+        state.write().set_authentication_token(NodeId::new(1, 456));
+        session.reset();
+        assert!(Arc::ptr_eq(&session.session_state, &state));
+        assert!(Arc::ptr_eq(
+            &session.session_state.read().message_queue,
+            &queue
+        ));
+        assert_eq!(
+            session.session_state.read().session_id(),
+            NodeId::new(1, 123)
+        );
+        assert_eq!(
+            session.make_request_header().authentication_token,
+            NodeId::new(1, 456)
+        );
+        let previous_handle = state.write().next_monitored_item_handle();
+        state.write().reset();
+        assert_eq!(
+            state.write().next_monitored_item_handle(),
+            previous_handle + 1
+        );
+    }
+
+    #[test]
+    fn reconnect_activity_tasks_can_spawn_while_runtime_is_running() {
+        let temp = tempdir::TempDir::new("reconnect-runtime").unwrap();
+        let session = Arc::new(session(temp.path()));
+        let runtime_guard = session.runtime.lock();
+        let worker_session = session.clone();
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            worker_session.spawn_session_activity_task(60000.0);
+            worker_session.spawn_subscription_activity_task();
+            done_tx.send(()).unwrap();
+        });
+        let result = done_rx.recv_timeout(std::time::Duration::from_secs(2));
+        drop(runtime_guard);
+        worker.join().unwrap();
+        assert!(
+            result.is_ok(),
+            "activity spawn waited for the running runtime mutex"
+        );
+    }
+
+    #[test]
+    fn owner_cancellation_removes_pending_and_offline_shadows_without_reusing_old_ids() {
+        struct Owner(u32);
+        impl OnSubscriptionNotification for Owner {
+            fn subscription_context_id(&self) -> Option<u32> {
+                Some(self.0)
+            }
+        }
+        let owned = |source_id, owner_id| {
+            Subscription::new(
+                source_id,
+                100.0,
+                300,
+                100,
+                0,
+                true,
+                0,
+                Arc::new(Mutex::new(Owner(owner_id))),
+            )
+        };
+        let temp = tempdir::TempDir::new("reconnect-cancel").unwrap();
+        let source = session(temp.path());
+        source
+            .subscription_state
+            .write()
+            .add_subscription(owned(5, 200));
+        source
+            .subscription_state
+            .write()
+            .add_subscription(owned(6, 100));
+        // ID 5 belonged to owner 100 before reconnect, but is now active for 200.
+        source.pending_recreation.lock().push(owned(5, 100));
+        source.pending_recreation.lock().push(owned(99, 300));
+
+        source.delete_subscription_context(100).unwrap();
+
+        assert!(source.subscription_state.read().subscription_exists(5));
+        assert!(!source.subscription_state.read().subscription_exists(6));
+        let pending = source.pending_recreation.lock();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(
+            pending[0]
+                .notification_callback()
+                .lock()
+                .subscription_context_id(),
+            Some(300)
+        );
     }
 }

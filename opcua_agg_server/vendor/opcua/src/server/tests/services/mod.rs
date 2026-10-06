@@ -13,6 +13,7 @@ struct ServiceTest {
     pub address_space: Arc<RwLock<AddressSpace>>,
     pub session: Arc<RwLock<Session>>,
     pub session_manager: Arc<RwLock<SessionManager>>,
+    _pki_directory: tempdir::TempDir,
 }
 
 impl ServiceTest {
@@ -21,7 +22,11 @@ impl ServiceTest {
     }
 
     pub fn new_with_server(server_builder: ServerBuilder) -> ServiceTest {
-        let server = server_builder.server().unwrap();
+        let pki_directory = tempdir::TempDir::new("opcua-service-test").unwrap();
+        let server = server_builder
+            .pki_dir(pki_directory.path())
+            .server()
+            .unwrap();
         let server_state = server.server_state();
         let address_space = server.address_space();
         let session = Arc::new(RwLock::new(Session::new(server_state.clone())));
@@ -37,6 +42,7 @@ impl ServiceTest {
             address_space,
             session,
             session_manager,
+            _pki_directory: pki_directory,
         }
     }
 

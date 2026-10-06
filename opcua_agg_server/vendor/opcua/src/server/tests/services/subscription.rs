@@ -226,7 +226,10 @@ fn publish_response_subscription() {
             // We expect the response to contain a non-empty notification
             assert_eq!(response.more_notifications, false);
             assert_eq!(response.subscription_id, subscription_id);
-            assert!(response.available_sequence_numbers.is_none());
+            assert_eq!(
+                response.available_sequence_numbers,
+                Some(vec![response.notification_message.sequence_number])
+            );
 
             response.notification_message
         };

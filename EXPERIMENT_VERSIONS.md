@@ -1,8 +1,30 @@
 # Experiment and source provenance
 
-The public repository is a clean-history release assembled from original repository commit `415bc89a7395a1c06b8e796bdca22a1f7e581bf3`. Public-only changes are documentation and licensing metadata, compact result copies, removal of generated/cache/lab-specific files, replacement of the private default aggregation address with `127.0.0.1`, and allocation of an IPv6-capable `sockaddr_storage` buffer in the bundled open62541 mDNS caller. The latter removes a latent overflow if that currently IPv4-only path is later extended to IPv6; it does not change the evaluated IPv4 behavior.
+## Revised release v0.2.0
 
-The new release commit is not the historical commit that executed every experiment. The run manifests remain authoritative:
+The current software is exported from the working implementation on 6 October 2026, preserving the public release boundary and third party notices. It includes incremental rule maintenance and the later admission and supervision implementation. Public source modifications needed for portability and redaction are distinct from experimental revisions. Source hashes and any deviations are documented in the release preparation audit and relevant component notices.
+
+The authoritative current public selection is `Validation/current_20261006/cohort.json`. Its result projections and export manifest preserve available original run IDs, relevant hashes, and explicit limitations.
+
+| Evidence | Recorded scope |
+| --- | --- |
+| Current E01 | Three independently initialized local runs of the same 16 source fixtures |
+| E02 | Original single physical configuration run from July, unchanged scope |
+| Current E03 | Three separately initialized latency sessions in one retained physical deployment |
+| E08 | Local supervision and separate controlled process exit tests |
+| E09 | Earlier incremental implementation, 21 complete recordings selected from 37 attempts |
+| E10 | Later admission implementation, three B100 trials with two full passes and three F24 trials with three full passes |
+
+No claim is made that building the current release recreates every recorded historical binary. In particular, the E09 timing data are not measurements of the later admission implementation. The compact public evidence does not include every original model export, runtime state, or deployment inventory.
+
+## Historical v0.1.0 provenance
+
+The following describes the retained original release and its July experiments, not the current experimental cohorts.
+
+
+The original v0.1.0 release was a clean-history publication assembled from original repository commit `415bc89a7395a1c06b8e796bdca22a1f7e581bf3`. Public-only changes are documentation and licensing metadata, compact result copies, removal of generated/cache/lab-specific files, replacement of the private default aggregation address with `127.0.0.1`, and allocation of an IPv6-capable `sockaddr_storage` buffer in the bundled open62541 mDNS caller. The latter removes a latent overflow if that currently IPv4-only path is later extended to IPv6; it does not change the evaluated IPv4 behavior.
+
+The v0.1.0 release commit is not the historical commit that executed every experiment. The run manifests remain authoritative:
 
 | Experiment | Canonical run or matrix | Recorded implementation |
 | --- | --- | --- |

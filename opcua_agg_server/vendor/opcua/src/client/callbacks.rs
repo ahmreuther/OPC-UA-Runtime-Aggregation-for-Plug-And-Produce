@@ -13,7 +13,9 @@
 
 use std::fmt;
 
-use crate::types::{service_types::EventNotificationList, status_code::StatusCode};
+use crate::types::{
+    service_types::EventNotificationList, status_code::StatusCode, MonitoredItemCreateResult,
+};
 
 use super::subscription::MonitoredItem;
 
@@ -30,6 +32,12 @@ use super::subscription::MonitoredItem;
 /// [`EventCallback`]: ./struct.EventCallback.html
 ///
 pub trait OnSubscriptionNotification {
+    /// Optional stable owner context, independent of source-assigned IDs. It is
+    /// used to cancel active and pending subscriptions after a reconnect.
+    fn subscription_context_id(&self) -> Option<u32> {
+        None
+    }
+
     /// Called by the subscription after a `DataChangeNotification`. The default implementation
     /// does nothing.
     fn on_data_change(&mut self, _data_change_items: &[&MonitoredItem]) {}
@@ -38,6 +46,27 @@ pub trait OnSubscriptionNotification {
     /// are individual `EventFieldList` structs filled from the select clause criteria from when the
     /// event was constructed. The default implementation does nothing.
     fn on_event(&mut self, _events: &EventNotificationList) {}
+
+    /// Called before old source subscription IDs become invalid. Implementations
+    /// must not acquire application locks that can wait for this client session.
+    fn on_subscription_recreation_started(
+        &mut self,
+        _old_subscription_id: u32,
+    ) -> Result<(), StatusCode> {
+        Ok(())
+    }
+
+    /// Called after rebuilding a subscription. Each item contains its old source
+    /// ID, retained client handle, and individual creation result. Returning an
+    /// error preserves the old shadow for another reconnect attempt.
+    fn on_subscription_recreated(
+        &mut self,
+        _old_subscription_id: u32,
+        _new_subscription_id: u32,
+        _monitored_items: &[(u32, u32, MonitoredItemCreateResult)],
+    ) -> Result<(), StatusCode> {
+        Ok(())
+    }
 }
 
 /// The `OnConnectionStatusChange` trait can be used to register on the session to be notified

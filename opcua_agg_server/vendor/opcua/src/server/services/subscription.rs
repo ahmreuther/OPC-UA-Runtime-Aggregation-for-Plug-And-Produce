@@ -8,7 +8,10 @@ use crate::core::supported_message::SupportedMessage;
 use crate::sync::*;
 use crate::types::{status_code::StatusCode, *};
 
-use crate::server::aggregation_server::services::subscription::AggServerSubscriptionService;
+use crate::client::prelude::SubscriptionService as ClientSubscriptionService;
+use crate::server::aggregation_server::services::subscription::{
+    change_source_subscriptions, AggServerSubscriptionService,
+};
 use crate::server::{
     address_space::AddressSpace, services::Service, session::Session, state::ServerState,
     subscriptions::subscription::Subscription,
@@ -59,7 +62,7 @@ impl SubscriptionService {
 
             // Create a new subscription
             let publishing_enabled = request.publishing_enabled;
-            let subscription = Subscription::new(
+            let mut subscription = Subscription::new(
                 server_state.diagnostics.clone(),
                 subscription_id,
                 publishing_enabled,
@@ -69,12 +72,14 @@ impl SubscriptionService {
                 request.priority,
                 server_state.aggregation_server.clone(),
             );
+            subscription.set_max_notifications_per_publish(request.max_notifications_per_publish);
+            let notifications = subscription.aggregation_notifications();
             subscriptions.insert(subscription_id, subscription);
 
             if let Some(aggregation_server) = server_state.aggregation_server() {
                 if let Err(msg) = self.create_subscriptions_aggserver(
                     aggregation_server,
-                    session_p.clone(),
+                    notifications,
                     request,
                     revised_publishing_interval,
                     revised_lifetime_count,
@@ -104,44 +109,41 @@ impl SubscriptionService {
         session: Arc<RwLock<Session>>,
         request: &ModifySubscriptionRequest,
     ) -> SupportedMessage {
-        let server_state = trace_write_lock!(server_state);
-        let mut session = trace_write_lock!(session);
-
-        let subscriptions = session.subscriptions_mut();
-        let subscription_id = request.subscription_id;
-
-        if !subscriptions.contains(subscription_id) {
-            self.service_fault(
+        let (interval, keep_alive, lifetime) = {
+            let state = server_state.read();
+            Self::revise_subscription_values(
+                &state,
+                request.requested_publishing_interval,
+                request.requested_max_keep_alive_count,
+                request.requested_lifetime_count,
+            )
+        };
+        // Publishing/lifetime belong to the upper subscription. Source sampling
+        // intervals are independent and are changed by ModifyMonitoredItems.
+        // Do not require a source to support ModifySubscription for this local
+        // scheduling change (some valid source permissions disallow it).
+        let mut session = session.write();
+        let Some(subscription) = session.subscriptions_mut().get_mut(request.subscription_id)
+        else {
+            return self.service_fault(
                 &request.request_header,
                 StatusCode::BadSubscriptionIdInvalid,
-            )
-        } else {
-            let subscription = subscriptions.get_mut(subscription_id).unwrap();
-
-            let (revised_publishing_interval, revised_max_keep_alive_count, revised_lifetime_count) =
-                SubscriptionService::revise_subscription_values(
-                    &server_state,
-                    request.requested_publishing_interval,
-                    request.requested_max_keep_alive_count,
-                    request.requested_lifetime_count,
-                );
-
-            subscription.set_publishing_interval(revised_publishing_interval);
-            subscription.set_max_keep_alive_count(revised_max_keep_alive_count);
-            subscription.set_max_lifetime_count(revised_lifetime_count);
-            subscription.set_priority(request.priority);
-            subscription.reset_lifetime_counter();
-            subscription.reset_keep_alive_counter();
-            // ...max_notifications_per_publish??
-
-            ModifySubscriptionResponse {
-                response_header: ResponseHeader::new_good(&request.request_header),
-                revised_publishing_interval,
-                revised_lifetime_count,
-                revised_max_keep_alive_count,
-            }
-            .into()
+            );
+        };
+        subscription.set_publishing_interval(interval);
+        subscription.set_max_keep_alive_count(keep_alive);
+        subscription.set_max_lifetime_count(lifetime);
+        subscription.set_priority(request.priority);
+        subscription.set_max_notifications_per_publish(request.max_notifications_per_publish);
+        subscription.reset_lifetime_counter();
+        subscription.reset_keep_alive_counter();
+        ModifySubscriptionResponse {
+            response_header: ResponseHeader::new_good(&request.request_header),
+            revised_publishing_interval: interval,
+            revised_lifetime_count: lifetime,
+            revised_max_keep_alive_count: keep_alive,
         }
+        .into()
     }
 
     /// Implementation of SetPublishingModeRequest service. See OPC Unified Architecture, Part 4 5.13.4
@@ -153,23 +155,42 @@ impl SubscriptionService {
         if is_empty_option_vec!(request.subscription_ids) {
             self.service_fault(&request.request_header, StatusCode::BadNothingToDo)
         } else {
-            let mut session = trace_write_lock!(session);
-            let subscription_ids = request.subscription_ids.as_ref().unwrap();
-            let results = {
-                let publishing_enabled = request.publishing_enabled;
-                let mut results = Vec::with_capacity(subscription_ids.len());
-                let subscriptions = session.subscriptions_mut();
-                for subscription_id in subscription_ids {
-                    if let Some(subscription) = subscriptions.get_mut(*subscription_id) {
-                        subscription.set_publishing_enabled(publishing_enabled);
-                        subscription.reset_lifetime_counter();
-                        results.push(StatusCode::Good);
-                    } else {
-                        results.push(StatusCode::BadSubscriptionIdInvalid);
+            let mut statuses = Vec::new();
+            for id in request.subscription_ids.as_ref().unwrap() {
+                let aggregation = {
+                    let guard = session.read();
+                    let Some(subscription) = guard.subscriptions().subscriptions().get(id) else {
+                        statuses.push(StatusCode::BadSubscriptionIdInvalid);
+                        continue;
+                    };
+                    subscription.aggregation_server()
+                };
+                if let Some(aggregation) = aggregation {
+                    if let Err(status) =
+                        change_source_subscriptions(&aggregation, *id, |source, source_id| {
+                            let result = source
+                                .set_publishing_mode(&[source_id], request.publishing_enabled)?;
+                            match result.as_slice() {
+                                [status] if status.is_good() => Ok(()),
+                                [status] => Err(*status),
+                                _ => Err(StatusCode::BadUnexpectedError),
+                            }
+                        })
+                    {
+                        statuses.push(status);
+                        continue;
                     }
                 }
-                Some(results)
-            };
+                let mut guard = session.write();
+                if let Some(subscription) = guard.subscriptions_mut().get_mut(*id) {
+                    subscription.set_publishing_enabled(request.publishing_enabled);
+                    subscription.reset_lifetime_counter();
+                    statuses.push(StatusCode::Good);
+                } else {
+                    statuses.push(StatusCode::BadSubscriptionIdInvalid);
+                }
+            }
+            let results = Some(statuses);
             let diagnostic_infos = None;
             SetPublishingModeResponse {
                 response_header: ResponseHeader::new_good(&request.request_header),

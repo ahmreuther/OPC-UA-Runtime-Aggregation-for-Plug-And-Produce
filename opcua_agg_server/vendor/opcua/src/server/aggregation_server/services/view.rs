@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 use tracing::instrument;
 
 use crate::client::prelude::BrowseDescription;
@@ -24,11 +24,16 @@ use crate::server::session::Session as ServerSession;
 use crate::server::{address_space::AddressSpace, services::view::ViewService};
 use crate::sync::RwLock;
 use crate::types::BrowseDirection;
+use crate::types::ByteString;
 use crate::types::ReferenceDescription;
 
 use super::service_delegation::delegate_service_call;
 use super::service_delegation::DecidingField;
-use super::service_delegation::TransformableItem;
+use super::service_delegation::{ServiceResultItem, TransformableItem};
+
+// A small batch remains compatible with constrained embedded servers and keeps
+// their simultaneous ContinuationPoint count bounded.
+const LOWER_SERVER_BROWSE_BATCH_SIZE: usize = 4;
 
 impl TransformableItem for BrowseDescription {
     fn node_ids(&mut self) -> Vec<&mut NodeId> {
@@ -36,6 +41,24 @@ impl TransformableItem for BrowseDescription {
     }
     fn deciding_field(&self) -> Option<DecidingField> {
         Some(DecidingField::NodeId(&self.node_id))
+    }
+}
+
+impl ServiceResultItem for BrowseResult {
+    fn from_status_code(status_code: StatusCode) -> Self {
+        Self {
+            status_code,
+            continuation_point: ByteString::null(),
+            references: None,
+        }
+    }
+}
+impl ServiceResultItem for BrowsePathResult {
+    fn from_status_code(status_code: StatusCode) -> Self {
+        Self {
+            status_code,
+            targets: None,
+        }
     }
 }
 
@@ -100,6 +123,131 @@ impl TransformableItem for BrowsePathResult {
     }
 }
 
+fn normalize_source_browse_error(status_code: StatusCode) -> StatusCode {
+    match status_code {
+        StatusCode::BadCommunicationError
+        | StatusCode::BadConnectionClosed
+        | StatusCode::BadNotConnected => StatusCode::BadServerNotConnected,
+        _ => status_code,
+    }
+}
+
+fn browse_error_results(count: usize, status_code: StatusCode) -> Vec<BrowseResult> {
+    let status_code = normalize_source_browse_error(status_code);
+    (0..count)
+        .map(|_| BrowseResult {
+            status_code,
+            continuation_point: ByteString::null(),
+            references: None,
+        })
+        .collect()
+}
+
+fn collect_source_browse_pages<F>(
+    mut result: BrowseResult,
+    mut browse_next: F,
+) -> Result<BrowseResult, StatusCode>
+where
+    F: FnMut(&ByteString) -> Result<Option<Vec<BrowseResult>>, StatusCode>,
+{
+    if result.status_code.is_bad() {
+        result.continuation_point = ByteString::null();
+        return Ok(result);
+    }
+
+    let mut references = result.references.take().unwrap_or_default();
+    let mut continuation_point =
+        std::mem::replace(&mut result.continuation_point, ByteString::null());
+    let mut seen_continuation_points = HashSet::new();
+
+    while !continuation_point.is_null() {
+        if !seen_continuation_points.insert(continuation_point.clone()) {
+            return Err(StatusCode::BadUnexpectedError);
+        }
+
+        let Some(mut next_results) = browse_next(&continuation_point)? else {
+            return Err(StatusCode::BadUnknownResponse);
+        };
+        if next_results.len() != 1 {
+            return Err(StatusCode::BadUnexpectedError);
+        }
+
+        let mut next = next_results.remove(0);
+        if next.status_code.is_bad() {
+            next.continuation_point = ByteString::null();
+            next.references = None;
+            return Ok(next);
+        }
+        references.extend(next.references.take().unwrap_or_default());
+        continuation_point = std::mem::replace(&mut next.continuation_point, ByteString::null());
+    }
+
+    result.references = Some(references);
+    Ok(result)
+}
+
+fn browse_source_all_pages(
+    client_session_p: Arc<RwLock<ClientSession>>,
+    browses: &[BrowseDescription],
+) -> Vec<BrowseResult> {
+    let session = client_session_p.read();
+    let mut merged_results = Vec::with_capacity(browses.len());
+
+    for browse_batch in browses.chunks(LOWER_SERVER_BROWSE_BATCH_SIZE) {
+        let initial_results = match session.browse(browse_batch) {
+            Ok(Some(results)) if results.len() == browse_batch.len() => results,
+            Ok(Some(results)) => {
+                warn!(
+                    "Lower server returned {} BrowseResults for {} requests",
+                    results.len(),
+                    browse_batch.len()
+                );
+                let remaining = browses.len() - merged_results.len();
+                merged_results.extend(browse_error_results(
+                    remaining,
+                    StatusCode::BadUnexpectedError,
+                ));
+                return merged_results;
+            }
+            Ok(None) => {
+                let remaining = browses.len() - merged_results.len();
+                merged_results.extend(browse_error_results(
+                    remaining,
+                    StatusCode::BadUnknownResponse,
+                ));
+                return merged_results;
+            }
+            Err(status_code) => {
+                warn!("Lower server Browse failed: {}", status_code.name());
+                let remaining = browses.len() - merged_results.len();
+                merged_results.extend(browse_error_results(remaining, status_code));
+                return merged_results;
+            }
+        };
+
+        for result in initial_results {
+            match collect_source_browse_pages(result, |continuation_point| {
+                session.browse_next(false, &[continuation_point.clone()])
+            }) {
+                Ok(result) => merged_results.push(result),
+                Err(status_code) => {
+                    warn!("Lower server BrowseNext failed: {}", status_code.name());
+                    merged_results.extend(browse_error_results(1, status_code));
+                    if normalize_source_browse_error(status_code)
+                        == StatusCode::BadServerNotConnected
+                    {
+                        let remaining = browses.len() - merged_results.len();
+                        merged_results.extend(browse_error_results(remaining, status_code));
+                        return merged_results;
+                    }
+                }
+            }
+        }
+    }
+
+    merged_results
+}
+
 pub(crate) trait AggServerViewService {
     fn browse_lower_servers(
         &self,
@@ -149,7 +297,7 @@ impl AggServerViewService for ViewService {
             |_lserver_id: &u16,
              client_session_p: Arc<RwLock<ClientSession>>,
              browses: &Vec<BrowseDescription>| {
-                return client_session_p.read().browse(browses.as_ref());
+                Ok(Some(browse_source_all_pages(client_session_p, browses)))
             };
 
         let map_db = match aggregation_server.map_db_p.read().connect() {
@@ -365,5 +513,91 @@ impl AggServerViewService for ViewService {
                 .into()
             }
         };
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::{LocalizedText, NodeClass, QualifiedName, ReferenceTypeId};
+
+    fn reference(node_id: u32, name: &str) -> ReferenceDescription {
+        ReferenceDescription {
+            reference_type_id: ReferenceTypeId::HasComponent.into(),
+            is_forward: true,
+            node_id: NodeId::new(1, node_id).into(),
+            browse_name: QualifiedName::new(1, name),
+            display_name: LocalizedText::from(name),
+            node_class: NodeClass::Variable,
+            type_definition: NodeId::new(0, 63u32).into(),
+        }
+    }
+
+    fn browse_page(
+        status_code: StatusCode,
+        continuation_point: ByteString,
+        references: Vec<ReferenceDescription>,
+    ) -> BrowseResult {
+        BrowseResult {
+            status_code,
+            continuation_point,
+            references: Some(references),
+        }
+    }
+
+    #[test]
+    fn source_continuation_points_are_drained_before_returning() {
+        let continuation_point = ByteString::from(vec![1, 2, 3]);
+        let first = browse_page(
+            StatusCode::Good,
+            continuation_point.clone(),
+            vec![reference(1, "First")],
+        );
+        let mut browse_next_calls = 0;
+
+        let merged = collect_source_browse_pages(first, |received| {
+            browse_next_calls += 1;
+            assert_eq!(received, &continuation_point);
+            Ok(Some(vec![browse_page(
+                StatusCode::Good,
+                ByteString::null(),
+                vec![reference(2, "Second")],
+            )]))
+        })
+        .expect("all source pages should be merged");
+
+        assert_eq!(browse_next_calls, 1);
+        assert!(merged.continuation_point.is_null());
+        let references = merged.references.expect("merged references");
+        assert_eq!(references.len(), 2);
+        assert_eq!(references[0].node_id.node_id, NodeId::new(1, 1u32));
+        assert_eq!(references[1].node_id.node_id, NodeId::new(1, 2u32));
+    }
+
+    #[test]
+    fn repeated_source_continuation_point_fails_closed() {
+        let continuation_point = ByteString::from(vec![4, 5, 6]);
+        let first = browse_page(StatusCode::Good, continuation_point.clone(), Vec::new());
+
+        let error = collect_source_browse_pages(first, |_| {
+            Ok(Some(vec![browse_page(
+                StatusCode::Good,
+                continuation_point.clone(),
+                Vec::new(),
+            )]))
+        })
+        .expect_err("a repeated source continuation point must not loop");
+
+        assert_eq!(error, StatusCode::BadUnexpectedError);
+    }
+
+    #[test]
+    fn disconnected_source_returns_one_result_per_requested_node() {
+        let results = browse_error_results(3, StatusCode::BadConnectionClosed);
+
+        assert_eq!(results.len(), 3);
+        assert!(results
+            .iter()
+            .all(|result| result.status_code == StatusCode::BadServerNotConnected));
     }
 }

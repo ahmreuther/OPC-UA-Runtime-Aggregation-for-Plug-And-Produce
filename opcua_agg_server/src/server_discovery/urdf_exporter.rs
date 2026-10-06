@@ -5,6 +5,16 @@ use anyhow::{Context, Result};
 use pyo3::prelude::*;
 use tracing::info;
 
+use super::http_server::{runtime_root, sanitize_folder_name};
+
+fn export_paths(root: &std::path::Path, name: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+    let name = sanitize_folder_name(name);
+    (
+        root.join(format!("urdf_tmp_{name}")),
+        root.join("urdfs").join(name),
+    )
+}
+
 pub struct UrdfExporter {
     callable: Py<PyAny>,
 }
@@ -64,10 +74,7 @@ impl UrdfExporter {
     }
 
     pub fn export_and_move(&self, address: &str, name: &str) -> anyhow::Result<()> {
-        let sanitized_name = name.replace([':', '/', '\\', '*', '?', '"', '<', '>', '|'], "_");
-
-        let urdf_tmp = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join(format!("urdf_tmp_{}", sanitized_name));
+        let (urdf_tmp, app_uri_dir) = export_paths(&runtime_root(), name);
         let temp_path = urdf_tmp.join("_export");
         std::fs::create_dir_all(&temp_path)?; // Erstellt urdf_tmp_{name}/_export
 
@@ -75,10 +82,6 @@ impl UrdfExporter {
             std::fs::remove_dir_all(&urdf_tmp).ok(); // Cleanup bei Export-Fehler
             return Err(e);
         }
-
-        let app_uri_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("urdfs")
-            .join(&sanitized_name);
 
         if app_uri_dir.exists() {
             std::fs::remove_dir_all(&app_uri_dir)?;
@@ -110,5 +113,30 @@ impl UrdfExporter {
 
         info!("URDF-Export abgeschlossen nach: {:?}", app_uri_dir);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::export_paths;
+    use std::path::Path;
+
+    #[test]
+    fn urdf_export_uses_selected_runtime_root_for_temp_and_http_bundle() {
+        let root = Path::new("configured-runtime");
+        let (temporary, bundle) = export_paths(root, "urn:robot:1");
+        assert_eq!(temporary, root.join("urdf_tmp_urn_robot_1"));
+        assert_eq!(bundle, root.join("urdfs").join("urn_robot_1"));
+    }
+
+    #[test]
+    fn source_name_cannot_choose_runtime_parent_for_bundle_replacement() {
+        let root = Path::new("configured-runtime");
+        for name in [".", "..", "...", "../private", "a/b", "a\\b"] {
+            let (temporary, bundle) = export_paths(root, name);
+            assert_eq!(temporary.parent(), Some(root));
+            assert_eq!(bundle.parent(), Some(root.join("urdfs").as_path()));
+            assert_ne!(bundle, root.join("urdfs"));
+        }
     }
 }

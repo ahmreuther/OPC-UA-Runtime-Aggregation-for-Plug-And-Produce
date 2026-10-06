@@ -60,7 +60,10 @@ pub fn p_sha(
 }
 
 fn hmac_vec(digest: hash::MessageDigest, key: &[u8], data: &[u8]) -> Vec<u8> {
-    // Compute a signature
+    // OpenSSL's legacy MAC-key constructor can reject zero-length keys.
+    // HMAC zero-pads keys to the digest block size, so an empty key and one
+    // zero byte are equivalent without changing the signature algorithm.
+    let key = if key.is_empty() { &[0u8][..] } else { key };
     let pkey = pkey::PKey::hmac(key).unwrap();
     let mut signer = sign::Signer::new(digest, &pkey).unwrap();
     signer.update(data).unwrap();

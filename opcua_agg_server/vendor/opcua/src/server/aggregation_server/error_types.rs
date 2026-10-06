@@ -3,6 +3,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum MappingError {
+    #[error("Aggregation operation stopped: {0}")]
+    OperationStopped(#[from] StatusCode),
     #[error("Error with the mapping database connection pooling. {0}")]
     R2D2Error(#[from] r2d2::Error),
     #[error("Error with the mapping database. {0}")]
@@ -60,6 +62,12 @@ pub enum RemoveLowerServerError {
 
 #[derive(Error, Debug)]
 pub enum LowerServerError {
+    #[error("Aggregation operation stopped: {0}")]
+    OperationStopped(#[from] StatusCode),
+    #[error("Lower-server worker panicked; partial onboarding was rolled back.")]
+    WorkerPanicked,
+    #[error("Lower-server session worker panicked while stopping.")]
+    SessionWorkerPanicked,
     #[error("Could not add root lserver folder to address space.")]
     AddressSpaceError,
     #[error("Could not create OPCUA client. ClientBuilder was in an invalid state.")]
@@ -86,6 +94,10 @@ pub enum LowerServerError {
 
 #[derive(Error, Debug)]
 pub enum TypeAggregationError {
+    #[error("Aggregation operation stopped: {0}")]
+    OperationStopped(#[from] StatusCode),
+    #[error("Cyclic or excessively deep type graph at {0}")]
+    InvalidTypeGraph(NodeId),
     #[error("Error with an opcua service response from lower server: {0}")]
     OpcuaResponseError(#[from] OpcuaResponseError),
     #[error("Type hash not found: {0}.")]
@@ -109,6 +121,8 @@ pub enum TypeAggregationError {
 
 #[derive(Error, Debug)]
 pub enum NamespaceAggregationError {
+    #[error("Aggregation operation stopped: {0}")]
+    OperationStopped(#[from] StatusCode),
     #[error("Error with an opcua service response from lower server: {0}")]
     OpcuaResponseError(#[from] OpcuaResponseError),
     #[error("Error registering namespace: {0}.")]

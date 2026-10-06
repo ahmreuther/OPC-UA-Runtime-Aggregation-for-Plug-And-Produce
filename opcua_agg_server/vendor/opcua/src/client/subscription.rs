@@ -34,12 +34,18 @@ pub(crate) struct CreateMonitoredItem {
     pub queue_size: u32,
     pub discard_oldest: bool,
     pub sampling_interval: f64,
+    pub filter: ExtensionObject,
+    pub timestamps_to_return: TimestampsToReturn,
 }
 
 pub(crate) struct ModifyMonitoredItem {
     pub id: u32,
+    pub client_handle: u32,
     pub sampling_interval: f64,
     pub queue_size: u32,
+    pub discard_oldest: bool,
+    pub filter: ExtensionObject,
+    pub timestamps_to_return: TimestampsToReturn,
 }
 
 #[derive(Debug)]
@@ -58,6 +64,9 @@ pub struct MonitoredItem {
     monitoring_mode: MonitoringMode,
     /// Sampling interval
     sampling_interval: f64,
+    /// Creation metadata retained for reconnection.
+    filter: ExtensionObject,
+    timestamps_to_return: TimestampsToReturn,
     /// Last value of the item
     last_value: DataValue,
     /// A list of all values received in the last data change notification. This list is cleared immediately
@@ -81,6 +90,8 @@ impl MonitoredItem {
             },
             monitoring_mode: MonitoringMode::Reporting,
             discard_oldest: false,
+            filter: ExtensionObject::null(),
+            timestamps_to_return: TimestampsToReturn::Both,
             last_value: DataValue::null(),
             values: Vec::with_capacity(1),
             client_handle,
@@ -133,6 +144,24 @@ impl MonitoredItem {
 
     pub fn discard_oldest(&self) -> bool {
         self.discard_oldest
+    }
+
+    pub(crate) fn timestamps_to_return(&self) -> TimestampsToReturn {
+        self.timestamps_to_return
+    }
+
+    pub(crate) fn recreation_request(&self) -> MonitoredItemCreateRequest {
+        MonitoredItemCreateRequest {
+            item_to_monitor: self.item_to_monitor.clone(),
+            monitoring_mode: self.monitoring_mode,
+            requested_parameters: MonitoringParameters {
+                client_handle: self.client_handle,
+                sampling_interval: self.sampling_interval,
+                filter: self.filter.clone(),
+                queue_size: self.queue_size as u32,
+                discard_oldest: self.discard_oldest,
+            },
+        }
     }
 
     pub(crate) fn set_id(&mut self, value: u32) {
@@ -298,6 +327,8 @@ impl Subscription {
             monitored_item.set_sampling_interval(i.sampling_interval);
             monitored_item.set_queue_size(i.queue_size as usize);
             monitored_item.set_item_to_monitor(i.item_to_monitor.clone());
+            monitored_item.filter = i.filter.clone();
+            monitored_item.timestamps_to_return = i.timestamps_to_return;
 
             let client_handle = monitored_item.client_handle();
             let monitored_item_id = monitored_item.id();
@@ -310,10 +341,24 @@ impl Subscription {
     pub(crate) fn modify_monitored_items(&mut self, items_to_modify: &[ModifyMonitoredItem]) {
         items_to_modify.iter().for_each(|i| {
             if let Some(ref mut monitored_item) = self.monitored_items.get_mut(&i.id) {
+                self.client_handles.remove(&monitored_item.client_handle);
+                monitored_item.client_handle = i.client_handle;
+                self.client_handles.insert(i.client_handle, i.id);
                 monitored_item.set_sampling_interval(i.sampling_interval);
                 monitored_item.set_queue_size(i.queue_size as usize);
+                monitored_item.set_discard_oldest(i.discard_oldest);
+                monitored_item.filter = i.filter.clone();
+                monitored_item.timestamps_to_return = i.timestamps_to_return;
             }
         });
+    }
+
+    pub(crate) fn set_monitoring_mode(&mut self, item_ids: &[u32], mode: MonitoringMode) {
+        for id in item_ids {
+            if let Some(item) = self.monitored_items.get_mut(id) {
+                item.set_monitoring_mode(mode);
+            }
+        }
     }
 
     pub(crate) fn delete_monitored_items(&mut self, items_to_delete: &[u32]) {
@@ -385,5 +430,173 @@ impl Subscription {
                 }
             }
         });
+    }
+}
+
+#[cfg(all(test, feature = "server"))]
+mod aggregation_notification_tests {
+    use super::*;
+    use crate::server::aggregation_server::services::subscription::AggregationSubscriptionNotification;
+    use crate::server::diagnostics::ServerDiagnostics;
+    use crate::server::session::Session;
+    use crate::server::subscriptions::monitored_item::Notification;
+    use crate::server::subscriptions::subscription::Subscription as ServerSubscription;
+    use std::sync::mpsc;
+    use std::time::Duration as StdDuration;
+
+    #[test]
+    fn source_callbacks_complete_while_upper_session_is_locked() {
+        let session = Arc::new(RwLock::new(Session::new_no_certificate_store()));
+        let sub = ServerSubscription::new(
+            Arc::new(RwLock::new(ServerDiagnostics::default())),
+            7,
+            true,
+            100.0,
+            300,
+            100,
+            0,
+            None,
+        );
+        let queue = sub.aggregation_notifications();
+        session.write().subscriptions_mut().insert(7, sub);
+        let callback = AggregationSubscriptionNotification {
+            map_db_p: Arc::new(RwLock::new(
+                crate::server::aggregation_server::map_db::MapDatabasePool::new().unwrap(),
+            )),
+            notifications: queue.clone(),
+            lserver_id: 1,
+            aggserver_sub_id: 7,
+        };
+        let mut source = Subscription::new(
+            11,
+            100.0,
+            300,
+            100,
+            0,
+            true,
+            0,
+            Arc::new(Mutex::new(callback)),
+        );
+        source.insert_monitored_items(&[CreateMonitoredItem {
+            id: 12,
+            client_handle: 456,
+            item_to_monitor: NodeId::new(2, "value").into(),
+            monitoring_mode: MonitoringMode::Reporting,
+            queue_size: 10,
+            discard_oldest: true,
+            sampling_interval: 100.0,
+            filter: ExtensionObject::null(),
+            timestamps_to_return: TimestampsToReturn::Both,
+        }]);
+        let expected = vec![
+            MonitoredItemNotification {
+                client_handle: 456,
+                value: DataValue::new_now(41u32),
+            },
+            MonitoredItemNotification {
+                client_handle: 456,
+                value: DataValue::new_now(42u32),
+            },
+        ];
+        let changes = expected.clone();
+        let events = EventNotificationList {
+            events: Some(vec![EventFieldList {
+                client_handle: 789,
+                event_fields: Some(vec![Variant::UInt32(43)]),
+            }]),
+        };
+        let expected_events = events.events.clone().unwrap();
+        let (done_tx, done_rx) = mpsc::channel();
+        let guard = session.write();
+        let worker = std::thread::spawn(move || {
+            source.on_data_change(&[DataChangeNotification {
+                monitored_items: Some(changes),
+                diagnostic_infos: None,
+            }]);
+            source.on_event(&[events]);
+            done_tx.send(()).unwrap();
+        });
+        let result = done_rx.recv_timeout(StdDuration::from_secs(2));
+        drop(guard);
+        worker.join().unwrap();
+        assert!(
+            result.is_ok(),
+            "source callback waited for the locked upper session"
+        );
+        let actual: Vec<_> = queue.lock().drain(..).collect();
+        let expected: Vec<_> = expected
+            .into_iter()
+            .map(Notification::MonitoredItemNotification)
+            .chain(expected_events.into_iter().map(Notification::Event))
+            .collect();
+        assert_eq!(actual, expected);
+    }
+}
+
+#[cfg(test)]
+mod reconnect_metadata_tests {
+    use super::*;
+    use crate::client::callbacks::DataChangeCallback;
+
+    #[test]
+    fn modified_item_metadata_and_handle_survive_recreation() {
+        let mut sub = Subscription::new(
+            10,
+            100.0,
+            300,
+            100,
+            0,
+            true,
+            0,
+            Arc::new(Mutex::new(DataChangeCallback::new(|_| {}))),
+        );
+        let filter = ExtensionObject::from_encodable(
+            NodeId::new(0, 724),
+            &DataChangeFilter {
+                trigger: DataChangeTrigger::StatusValueTimestamp,
+                deadband_type: 1,
+                deadband_value: 2.5,
+            },
+        );
+        sub.insert_monitored_items(&[CreateMonitoredItem {
+            id: 1,
+            client_handle: 2,
+            item_to_monitor: NodeId::new(2, "value").into(),
+            monitoring_mode: MonitoringMode::Reporting,
+            queue_size: 5,
+            discard_oldest: false,
+            sampling_interval: 25.0,
+            filter: filter.clone(),
+            timestamps_to_return: TimestampsToReturn::Source,
+        }]);
+        let request = sub.monitored_items()[&1].recreation_request();
+        assert_eq!(request.requested_parameters.filter, filter);
+        assert!(!request.requested_parameters.discard_oldest);
+        assert_eq!(
+            sub.monitored_items()[&1].timestamps_to_return(),
+            TimestampsToReturn::Source
+        );
+
+        sub.modify_monitored_items(&[ModifyMonitoredItem {
+            id: 1,
+            client_handle: 20,
+            queue_size: 9,
+            sampling_interval: 75.0,
+            discard_oldest: true,
+            filter: ExtensionObject::null(),
+            timestamps_to_return: TimestampsToReturn::Neither,
+        }]);
+        sub.set_monitoring_mode(&[1], MonitoringMode::Sampling);
+        assert_eq!(sub.monitored_item_id_from_handle(2), None);
+        assert_eq!(sub.monitored_item_id_from_handle(20), Some(1));
+        let item = &sub.monitored_items()[&1];
+        let request = item.recreation_request();
+        assert_eq!(request.requested_parameters.client_handle, 20);
+        assert_eq!(request.requested_parameters.queue_size, 9);
+        assert_eq!(request.requested_parameters.sampling_interval, 75.0);
+        assert!(request.requested_parameters.discard_oldest);
+        assert_eq!(request.requested_parameters.filter, ExtensionObject::null());
+        assert_eq!(request.monitoring_mode, MonitoringMode::Sampling);
+        assert_eq!(item.timestamps_to_return(), TimestampsToReturn::Neither);
     }
 }

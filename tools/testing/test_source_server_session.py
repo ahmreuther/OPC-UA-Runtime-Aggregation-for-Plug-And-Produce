@@ -94,7 +94,7 @@ class UrdfFixtureSelectionTests(unittest.TestCase):
             all(config.urdf_fixture_name is None for config in configs)
         )
 
-    @patch("pathlib.Path.is_file", return_value=True)
+    @patch("tools.source_servers.Path.is_file", return_value=True)
     @patch("tools.source_servers.sha256_file", return_value="fixture-sha256")
     def test_enriched_urdf_fixtures_are_opt_in_and_round_robin(self, _hash, _is_file):
         configs = create_server_configs(

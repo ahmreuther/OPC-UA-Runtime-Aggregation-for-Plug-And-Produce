@@ -1,3 +1,6 @@
+mod operation_control;
+pub use operation_control::SessionOperationControl;
+
 pub mod services;
 pub mod session;
 pub mod session_state;

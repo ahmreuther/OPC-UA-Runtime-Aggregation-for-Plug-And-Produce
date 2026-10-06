@@ -1,36 +1,23 @@
 # Research data metadata
 
-Use these values for the research-data component of the combined software-and-data release.
+- Title: Research Data for Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug And Produce Systems
+- Version: 0.2.0
+- Creators: Adrian Reuther, Niklas Bönisch, Benjamin Schleich
+- Affiliation: Technical University of Darmstadt
+- Repository: https://git.rwth-aachen.de/ai-in-production/publications/ieee-ojies-2026
+- Public mirror: https://github.com/ahmreuther/OPC-UA-Runtime-Aggregation-for-Plug-And-Produce
+- Research data license: CC BY 4.0
+- Source software license: PolyForm Noncommercial 1.0.0, with separate third party notices
+- Description: Current source software and curated evidence for repeated structural integration, physical URDF provisioning, Read latency, incremental integration performance, local supervision, and concurrent registration. Historical data remain explicitly separate.
+- Previous archived version: https://doi.org/10.5281/zenodo.21756816
+- Existing version family: https://doi.org/10.5281/zenodo.21756815
+- New version DOI: not yet assigned or verified
 
-- Project path: `ai-in-production/publications/ieee-ojies-2026`
-- Project URL: <https://git.rwth-aachen.de/ai-in-production/publications/ieee-ojies-2026>
-- Title: Research Data for Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug & Produce Systems
-- Description: Curated E01–E05 evidence and measurements for the OJIES 2026 runtime-aggregation study.
-- Resource type: Dataset
-- Combined release tag: `v0.1.0`
-- Publication year: 2026
-- Creators:
-  - Adrian Reuther — Technical University of Darmstadt
-  - Niklas Bönisch — Technical University of Darmstadt
-  - Benjamin Schleich — Technical University of Darmstadt
-- Language: English
-- Collection dates: 2026-07-16 to 2026-07-30
-- License: Creative Commons Attribution 4.0 International
-- Project visibility: use the existing GitLab project setting and publish only after rights, security, and metadata checks are complete.
-- Topics: `opc-ua`, `plug-and-produce`, `semantic-integration`, `industrial-automation`, `research-data`
+## Archival workflow
 
-The repository contains a 16-source cross-domain semantic-integration run, one bounded three-robot configuration run, 10,000 paired direct/aggregated Read observations, and a 21-run Raspberry-Pi/Linux source-count matrix up to 100 requested sources. Private infrastructure data, deployment keys, experimental packet captures, redundant runtime states, and robot assets without confirmed redistribution rights are excluded.
+1. Verify the curated release and its checksums, then identify the immutable source tag and commit.
+2. On the existing Zenodo record, create a new version and upload the archive for that tag. Do not overwrite the old version or create an unrelated record for this update.
+3. Publish the new version only after reviewing its contents and metadata.
+4. Verify the assigned version DOI and archive checksum. Use that exact DOI in the manuscript. The earlier DOI and the shared concept DOI remain distinct identifiers.
 
-## Related resources
-
-- Combined software and data release: <https://git.rwth-aachen.de/ai-in-production/publications/ieee-ojies-2026>, tag `v0.1.0`.
-- Article DOI: add after acceptance/publication.
-- E02 target application: WebSkillComposition v1.0.0, <https://doi.org/10.5281/zenodo.17034716>.
-- Archival data DOI: add only if the immutable data tag is later deposited in a DOI-minting repository.
-
-## Release workflow
-
-1. Push the single combined root commit as `main` and tag `v0.1.0`.
-2. Verify `RESEARCH_DATA_CHECKSUMS_SHA256.txt` in a fresh clone.
-3. Create one GitLab release from `v0.1.0` for software and research data.
-4. Add the article or archival data DOI later without rewriting the immutable tag.
+A mirrored Git branch is not an updated Zenodo deposit. The previously published record contains a manually uploaded ZIP. This release does not assume an enabled GitHub to Zenodo release integration.

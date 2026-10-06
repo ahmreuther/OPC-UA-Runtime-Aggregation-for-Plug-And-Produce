@@ -25,7 +25,8 @@ eindeutiger Validierungslauf unter
     Validation/integration/raw_data/semantic_integration/<run_id>/
 
 gespeichert. Nur ein technisch vollstaendiger Lauf, der alle E01-Gates
-besteht, erhaelt ``VALIDATED`` und aktualisiert ``latest_complete_run.txt``.
+und die aktuelle C16-Laufzeitpruefung besteht, erhaelt ``VALIDATED`` und
+aktualisiert ``latest_complete_run.txt``.
 Bestehende Laeufe werden nie ueberschrieben.
 
 Am Server-Code (Rust) und an XmlExporter.py/NodeXmlExporter.py wird nichts
@@ -50,7 +51,11 @@ Dateien unter tools/testing/):
 Die Pfade werden aus der Repository-Struktur abgeleitet. CARGO_TARGET_DIR
 kann gesetzt werden, falls das Release-Binary an einem anderen Ort liegt.
 OJIES_SEMANTIC_INTEGRATION_OUTPUT_DIR kann das Zielverzeichnis fuer die
-Validierungsartefakte ueberschreiben.
+Validierungsartefakte ueberschreiben. OJIES_E01_RUNTIME_DIR waehlt eine separat
+vorbereitete Runtime mit config.json, NodeSets und Python-Runtime. Mit
+OJIES_E01_SERVER_BINARY und OJIES_E01_PYTHON werden die ausgefuehrten Programme
+explizit festgelegt. Die Quellenfixtures selbst lesen ihre Modelle aus dem
+Repository. --run-id vergibt eine vorab bestimmte, nicht wiederverwendbare ID.
 --------------------------------------------------------------------------
 
 Annahme (nicht verifiziert, da XmlExporter.py's Basisklasse
@@ -97,6 +102,12 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE_ROOT = REPOSITORY_ROOT.parent
 PROJECT_ROOT = REPOSITORY_ROOT / "opcua_agg_server"
 
+
+def runtime_root() -> Path:
+    """Keep experiment writes separate from the checked-out source tree."""
+    configured = os.environ.get("OJIES_E01_RUNTIME_DIR")
+    return Path(configured).expanduser().resolve() if configured else PROJECT_ROOT
+
 # Kommando zum Starten des Aggregationsservers.
 # WICHTIG: direkt das fertig gebaute Binary starten (kein "cargo run"),
 # damit nicht bei jedem Start neu geprueft/gebaut wird. Einmalig bauen mit:
@@ -117,14 +128,6 @@ def cargo_target_dir() -> Path:
 
     if configured is None:
         default_target = PROJECT_ROOT / "target"
-        if sys.platform.startswith("win"):
-            shared_windows_target = Path("C:/cargo-target") / PROJECT_ROOT.name
-            binary_name = "roboteach_aggserver.exe"
-            if (
-                (shared_windows_target / "release" / binary_name).is_file()
-                and not (default_target / "release" / binary_name).is_file()
-            ):
-                return shared_windows_target
         return default_target
 
     target_dir = Path(configured).expanduser()
@@ -132,7 +135,9 @@ def cargo_target_dir() -> Path:
 
 
 CARGO_TARGET_DIR = cargo_target_dir()
-SERVER_CMD = [str(CARGO_TARGET_DIR / "release" / _SERVER_BINARY)]
+SERVER_CMD = [os.environ.get(
+    "OJIES_E01_SERVER_BINARY", str(CARGO_TARGET_DIR / "release" / _SERVER_BINARY)
+)]
 
 # Ordner mit NodeXmlExporter.py und XmlExporter.py.
 # Liegen standardmaessig direkt neben diesem Skript (gleicher Ordner).
@@ -145,7 +150,9 @@ if sys.platform.startswith("win"):
     _VENV_PY = _VENV_DIR / "Scripts" / "python.exe"
 else:
     _VENV_PY = _VENV_DIR / "bin" / "python"
-PYTHON_EXE = str(_VENV_PY) if _VENV_PY.exists() else sys.executable
+PYTHON_EXE = os.environ.get(
+    "OJIES_E01_PYTHON", str(_VENV_PY) if _VENV_PY.exists() else sys.executable
+)
 
 # Paper-bezogene Ausgabe. Jeder Lauf bekommt einen unveraenderlichen Ordner
 # mit stabilen Dateinamen. Das Ziel kann fuer isolierte Tests umgebogen werden.
@@ -602,10 +609,10 @@ def snapshot_runtime_inputs(
     input_dir.mkdir()
     snapshots: dict[str, Path] = {}
     for filename in RUNTIME_INPUT_FILES:
-        source = PROJECT_ROOT / filename
+        source = runtime_root() / filename
         if filename == "aggregation_results.jsonl" and not source.exists():
             events = completion_events(
-                completion_log_path, load_json(PROJECT_ROOT / "config.json") or {}
+                completion_log_path, load_json(runtime_root() / "config.json") or {}
             )
             if events:
                 target = input_dir / filename
@@ -755,17 +762,21 @@ def start_server(run_dir: Path) -> subprocess.Popen:
     stdin-Pipe und die konfigurierte Antwort wird automatisch uebergeben.
     """
     print(f"Starte Aggregationsserver: {' '.join(SERVER_CMD)}")
-    print(f"  (Arbeitsverzeichnis: {PROJECT_ROOT})")
+    print(f"  (Arbeitsverzeichnis: {runtime_root()})")
     server_log_path = run_dir / "server_console.log"
     server_log = server_log_path.open("w", encoding="utf-8", buffering=1)
-    completion_dir = PROJECT_ROOT / "logs"
+    completion_dir = runtime_root() / "logs"
     existing_completion_logs = set(completion_dir.glob("device_completions_*.log"))
     server_started_at_ns = time.time_ns()
     environment = os.environ.copy()
     environment["OJIES_OPCUA_HOST"] = E01_AGGREGATION_HOST
+    environment["OJIES_RUNTIME_DIR"] = str(runtime_root())
+    environment["OJIES_COMPLETION_LOG_PATH"] = str(run_dir / "device_completions.log")
+    environment["OJIES_ONBOARDING_LOG_PATH"] = str(run_dir / "onboarding_events.jsonl")
+    environment["OJIES_ADMISSION_LOG_PATH"] = str(run_dir / "admission_events.jsonl")
     proc = subprocess.Popen(
         SERVER_CMD,
-        cwd=str(PROJECT_ROOT),
+        cwd=str(runtime_root()),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -806,8 +817,10 @@ def start_server(run_dir: Path) -> subprocess.Popen:
         print(f"[WARNUNG] Konnte Antwort nicht an Server weiterleiten: {e}")
 
     deadline = time.monotonic() + 5.0
-    completion_log_path = None
+    completion_log_path = run_dir / "device_completions.log"
     while time.monotonic() < deadline:
+        if completion_log_path.exists():
+            break
         candidates = set(completion_dir.glob("device_completions_*.log")) - existing_completion_logs
         if candidates:
             completion_log_path = max(candidates, key=lambda path: path.stat().st_mtime_ns)
@@ -826,11 +839,11 @@ def read_aggregation_progress(
 ) -> dict:
     """Read the live, atomic per-source result and discovery configuration."""
     try:
-        config = load_json(PROJECT_ROOT / "config.json") or {}
+        config = load_json(runtime_root() / "config.json") or {}
     except (json.JSONDecodeError, OSError):
         # config.json is replaced by another process; retry on the next poll.
         config = {}
-    events = load_jsonl(PROJECT_ROOT / "aggregation_results.jsonl")
+    events = load_jsonl(runtime_root() / "aggregation_results.jsonl")
     if not events:
         events = completion_events(completion_log_path, config)
     results = latest_aggregation_results(events)
@@ -895,7 +908,7 @@ def wait_for_verified_aggregation(
         if completion_log_path is None:
             existing_logs = getattr(proc, "ojies_existing_completion_logs", set())
             candidates = [
-                path for path in (PROJECT_ROOT / "logs").glob("device_completions_*.log")
+                path for path in (runtime_root() / "logs").glob("device_completions_*.log")
                 if path not in existing_logs
             ]
             if candidates:
@@ -948,34 +961,44 @@ def wait_for_verified_aggregation(
     return progress
 
 
+def force_owned_process_tree(proc: subprocess.Popen) -> None:
+    """Terminate only this runner's process tree if graceful stop failed."""
+    if sys.platform.startswith("win"):
+        result = subprocess.run(
+            ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+            capture_output=True, text=True, check=False,
+        )
+        if result.returncode != 0 and proc.poll() is None:
+            raise RuntimeError(f"Owned process tree {proc.pid} did not stop: {result.stderr}")
+    else:
+        proc.kill()
+    proc.wait(timeout=15)
+
+
 def stop_server(proc: subprocess.Popen, timeout: float = 15.0) -> None:
-    if proc.poll() is not None:
-        print("Server-Prozess laeuft bereits nicht mehr.")
+    record = {"pid": proc.pid, "forced": False, "signal_error": None}
+    try:
+        if proc.poll() is None:
+            print("Beende Aggregationsserver...")
+            try:
+                if sys.platform.startswith("win"):
+                    proc.send_signal(signal.CTRL_BREAK_EVENT)
+                else:
+                    proc.terminate()
+                proc.wait(timeout=timeout)
+            except (OSError, subprocess.TimeoutExpired) as error:
+                record["forced"] = True
+                record["signal_error"] = str(error)
+                force_owned_process_tree(proc)
+        record["return_code"] = proc.returncode
+    finally:
+        proc.ojies_shutdown_record = record
         output_thread = getattr(proc, "ojies_output_thread", None)
         if output_thread is not None:
             output_thread.join(timeout=2)
         server_log = getattr(proc, "ojies_server_log", None)
         if server_log is not None and not server_log.closed:
             server_log.close()
-        return
-    print("Beende Aggregationsserver (SIGTERM)...")
-    if sys.platform.startswith("win"):
-        proc.send_signal(signal.CTRL_BREAK_EVENT)
-    else:
-        proc.terminate()
-    try:
-        proc.wait(timeout=timeout)
-        print("Server sauber beendet.")
-    except subprocess.TimeoutExpired:
-        print("Server reagiert nicht - erzwinge Beendigung (kill)...")
-        proc.kill()
-        proc.wait()
-    output_thread = getattr(proc, "ojies_output_thread", None)
-    if output_thread is not None:
-        output_thread.join(timeout=2)
-    server_log = getattr(proc, "ojies_server_log", None)
-    if server_log is not None and not server_log.closed:
-        server_log.close()
 
 
 def start_source_fixtures(
@@ -1635,7 +1658,7 @@ def build_nodeset_model_expectations(
         nodeset_dir: Optional[Path] = None,
 ) -> dict:
     """Read the nodes and type nodes declared by each mapped model itself."""
-    nodeset_dir = nodeset_dir or (PROJECT_ROOT / "nodesets")
+    nodeset_dir = nodeset_dir or (runtime_root() / "nodesets")
     expected_nodes = defaultdict(set)
     expected_types = defaultdict(set)
     mapped_uris = set()
@@ -2696,7 +2719,11 @@ def write_run_manifest(
         })
 
     acceptance = data.get("e01_acceptance", {"passed": False, "criteria": {}})
-    scientific_status = "passed" if acceptance.get("passed") else "failed"
+    lifecycle = data.get("runtime_lifecycle", {"passed": False})
+    scientific_status = (
+        "passed" if status == "complete" and acceptance.get("passed")
+        and lifecycle.get("passed") else "failed"
+    )
     manifest = {
         "schema": "ojies.semantic-integration-run/v2",
         "run_id": run_dir.name,
@@ -2720,6 +2747,8 @@ def write_run_manifest(
                 "source_fixture_orchestration"
             ),
             "aggregation_host": E01_AGGREGATION_HOST,
+            "runtime_directory": workspace_path(runtime_root()),
+            "source_and_export_python": PYTHON_EXE,
         },
         "repository": repository_state(),
         "server_binary": binary,
@@ -2778,6 +2807,7 @@ def write_run_manifest(
             ),
         },
         "e01_acceptance": acceptance,
+        "runtime_lifecycle": lifecycle,
         "manuscript_consumers": {
             "tab_artefact_metrics": {
                 "primary_file": "summary.json",
@@ -2793,7 +2823,8 @@ def write_run_manifest(
         },
         "interpretation_note": (
             "COMPLETED means that all expected files were captured and parsed. "
-            "VALIDATED is written only when every E01 acceptance criterion passes."
+            "VALIDATED requires every E01 semantic criterion and the separate "
+            "C16 runtime lifecycle check to pass."
         ),
     }
 
@@ -2807,7 +2838,7 @@ def write_run_manifest(
         (run_dir / "COMPLETED").write_text(
             f"{completed_at}\n", encoding="utf-8"
         )
-    if status == "complete" and acceptance.get("passed"):
+    if status == "complete" and scientific_status == "passed":
         (run_dir / "VALIDATED").write_text(
             f"{completed_at}\n", encoding="utf-8"
         )
@@ -2867,10 +2898,96 @@ def build_unresolved_rules_enriched(rules: list) -> list:
     ]
 
 
+def ensure_local_ports_available(endpoint: str, source_count: int) -> None:
+    """Reject occupied listeners before starting any owned experiment process."""
+    _, aggregation_port = server_endpoint_tcp_address(endpoint)
+    for port in {4840, 8080, aggregation_port, *range(4860, 4860 + source_count)}:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            if sys.platform.startswith("win"):
+                probe.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+            try:
+                probe.bind(("127.0.0.1", port))
+            except OSError as error:
+                raise RuntimeError(f"Required experiment TCP port {port} is occupied") from error
+
+
+def build_runtime_lifecycle_report(run_dir: Path, expected_sources: set[str]) -> dict:
+    """Keep C16 attempt failures visible independently of the 17 E01 gates."""
+    errors = []
+    logs = {}
+    for filename in ("onboarding_events.jsonl", "admission_events.jsonl"):
+        records = []
+        try:
+            for line_number, line in enumerate(
+                    (run_dir / filename).read_text(encoding="utf-8").splitlines(), 1):
+                if line.strip():
+                    item = json.loads(line)
+                    if not isinstance(item, dict):
+                        raise ValueError(f"line {line_number} is not an object")
+                    records.append(item)
+        except (OSError, ValueError) as error:
+            errors.append(f"{filename}: {error}")
+        logs[filename] = records
+    active = {}
+    seen_attempts = set()
+    completed = []
+    terminals = {"completed", "failed", "timed_out", "fatal"}
+    for record in logs["onboarding_events.jsonl"]:
+        event = record.get("event")
+        key = record.get("attempt_id")
+        identity = (record.get("source"), record.get("endpoint"))
+        if event == "started":
+            if not key or key in seen_attempts or active:
+                errors.append(f"Invalid or overlapping attempt start: {key}")
+            active[key] = identity
+            seen_attempts.add(key)
+        elif event in terminals:
+            if key not in active or active.get(key) != identity:
+                errors.append(f"Terminal event does not match active attempt: {key}")
+            active.pop(key, None)
+            if event == "completed":
+                completed.append(record.get("source"))
+            else:
+                errors.append(f"Attempt {key}: {event}")
+        else:
+            errors.append(f"Unknown onboarding event: {event}")
+    if active:
+        errors.append("Onboarding attempts have no terminal event")
+    if set(completed) != expected_sources or len(completed) != len(expected_sources):
+        errors.append("Completed attempts do not match the expected unique sources")
+    admission = logs["admission_events.jsonl"]
+    policy = [item for item in admission if item.get("event") == "policy"]
+    if len(policy) != 1 or policy[0].get("integration_writers") != 1:
+        errors.append("Missing or invalid single writer policy")
+    abnormal = {
+        "discovery_failed", "discovery_restarted", "discovery_restart_failed",
+        "runtime_invalidated", "rebuild", "rebuild_failed",
+    }
+    for record in admission:
+        if record.get("event") in abnormal:
+            errors.append(f"Admission event: {record['event']}")
+        if record.get("event") == "finished" and record.get("integration_success") is not True:
+            errors.append("Unsuccessful admission attempt")
+    return {
+        "schema": "ojies.e01.runtime-lifecycle/v1",
+        "passed": not errors,
+        "expected_source_count": len(expected_sources),
+        "attempt_count": len(seen_attempts),
+        "completed_source_count": len(set(completed)),
+        "onboarding_event_counts": dict(Counter(
+            item.get("event") for item in logs["onboarding_events.jsonl"])),
+        "admission_event_counts": dict(Counter(item.get("event") for item in admission)),
+        "errors": errors,
+        "scope": "C16 lifecycle through live XML export and aggregator shutdown. "
+                 "The 17 semantic criteria remain a separate result.",
+    }
+
+
 def parse_cli_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run and preserve the E01 semantic-integration validation."
     )
+    parser.add_argument("--run-id", help="Exclusive fixed identifier for a planned run.")
     parser.add_argument(
         "--expected-source-count",
         type=int,
@@ -2896,7 +3013,7 @@ def parse_cli_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+def main() -> int:
     args = parse_cli_args()
     binary_path = Path(SERVER_CMD[0])
     if not binary_path.is_file():
@@ -2907,14 +3024,16 @@ def main() -> None:
             "enthaelt."
         )
     started_at = utc_now_iso()
-    run_dir = create_run_directory()
+    run_dir = create_run_directory(args.run_id)
     print(f"Validierungslauf angelegt: {run_dir}")
 
-    initial_config = load_json(PROJECT_ROOT / "config.json") or {}
+    initial_config = load_json(runtime_root() / "config.json") or {}
     endpoint = determine_server_endpoint(initial_config)
     xml_path: Optional[Path] = None
     aggregation_wait: dict = {"wait_status": "not_started"}
 
+    if args.start_source_fixtures:
+        ensure_local_ports_available(endpoint, args.expected_source_count)
     proc = start_server(run_dir)
     source_proc: Optional[subprocess.Popen] = None
     try:
@@ -2965,11 +3084,23 @@ def main() -> None:
 
         # 1) Address Space exportieren, WAEHREND der Server noch laeuft
         xml_path = export_address_space(endpoint, run_dir)
+    except BaseException as error:
+        (run_dir / "run_error.json").write_text(
+            json.dumps({"error": repr(error), "timestamp_utc": utc_now_iso()}, indent=2)
+            + "\n", encoding="utf-8",
+        )
+        raise
     finally:
         # 2) Server auch bei Ctrl+C oder einem Exportfehler stoppen
-        stop_server(proc)
-        if source_proc is not None:
-            stop_source_fixtures(source_proc)
+        try:
+            stop_server(proc)
+        finally:
+            if source_proc is not None:
+                stop_source_fixtures(source_proc)
+            (run_dir / "shutdown.json").write_text(
+                json.dumps(getattr(proc, "ojies_shutdown_record", {}), indent=2)
+                + "\n", encoding="utf-8",
+            )
 
     # 3) Laufzeit-JSON unveraendert sichern und nur die Snapshots auswerten
     completion_log_path = getattr(proc, "ojies_completion_log_path", None)
@@ -3054,6 +3185,13 @@ def main() -> None:
         data, args.expected_source_count
     )
 
+    data["runtime_lifecycle"] = build_runtime_lifecycle_report(
+        run_dir, {host["name"] for host in data["config"]["hosts"]}
+    )
+    (run_dir / "runtime_lifecycle.json").write_text(
+        json.dumps(data["runtime_lifecycle"], indent=2) + "\n", encoding="utf-8"
+    )
+
     # 5) Ausgeben, hashen und erst danach den Latest-Zeiger aktualisieren
     outputs = write_outputs(data, run_dir)
     server_log_path = run_dir / "server_console.log"
@@ -3064,7 +3202,8 @@ def main() -> None:
         outputs["source_servers_console_log"] = source_log_path
     if completion_log_path is not None and completion_log_path.exists():
         preserved_completion_log = run_dir / "device_completions.log"
-        shutil.copy2(completion_log_path, preserved_completion_log)
+        if completion_log_path.resolve() != preserved_completion_log.resolve():
+            shutil.copy2(completion_log_path, preserved_completion_log)
         outputs["device_completions_log"] = preserved_completion_log
     xml_export_log_path = run_dir / "xml_export_console.log"
     if xml_export_log_path.exists():
@@ -3075,6 +3214,12 @@ def main() -> None:
     exported_xml = run_dir / "address_space.xml"
     if exported_xml.exists():
         outputs["address_space"] = exported_xml
+    for filename in (
+        "onboarding_events.jsonl", "admission_events.jsonl", "shutdown.json",
+        "runtime_lifecycle.json",
+    ):
+        if (run_dir / filename).is_file():
+            outputs[filename] = run_dir / filename
     outputs.update(capture_repository_provenance(run_dir))
     manifest_path = write_run_manifest(
         run_dir, started_at, endpoint, snapshots, outputs, data
@@ -3092,6 +3237,15 @@ def main() -> None:
             f"Fehlgeschlagen: {failed_criteria}"
         )
 
+    if not data["runtime_lifecycle"]["passed"]:
+        print("[WARNUNG] C16-Laufzeitpruefung nicht bestanden: "
+              + json.dumps(data["runtime_lifecycle"]["errors"], ensure_ascii=False))
+    e01_passed = (
+        data["validation_run"]["artifact_set_status"] == "complete"
+        and data["e01_acceptance"]["passed"]
+    )
+    return 0 if e01_passed and data["runtime_lifecycle"]["passed"] else 1
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

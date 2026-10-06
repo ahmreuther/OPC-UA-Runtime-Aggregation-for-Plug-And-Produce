@@ -2,7 +2,7 @@
 
 The root `LICENSE` applies only to project-authored source code offered in this release unless a file states otherwise. It does not replace or restrict third-party terms.
 
-The separate `LICENSE_DATA.md` applies only to project-authored compact result files under `results/`.
+The separate `LICENSE_DATA.md` applies to project-authored data and documentation identified in `RESEARCH_DATA_FILE_MANIFEST.csv`, including `results/`.
 
 ## Bundled OPC UA for Rust fork
 

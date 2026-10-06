@@ -14,7 +14,7 @@ use opcua::types::{AttributeId, NodeId, TimestampsToReturn};
 use std::collections::{HashMap, HashSet};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::server_discovery::config::update_config_with_discovered_servers;
 
@@ -26,6 +26,366 @@ const DEFAULT_ENDPOINT_FAILURE_THRESHOLD: u8 = 5;
 const DEFAULT_ENDPOINT_CONNECT_TIMEOUT_MS: u64 = 2_000;
 const MAX_ENDPOINT_FAILURE_THRESHOLD: u64 = 100;
 const MAX_ENDPOINT_CONNECT_TIMEOUT_MS: u64 = 60_000;
+
+const OBSERVATION_BUDGET: Duration = Duration::from_secs(15);
+const OBSERVATION_REQUEST_TIMEOUT_MS: u32 = 2_000;
+const MAX_NETWORK_IDENTITY_LOOKUPS: usize = 64;
+const NETWORK_IDENTITY_MAX_AGE: Duration = Duration::from_secs(300);
+const LOCAL_LDS_URI: &str = "urn:open62541.example.local_discovery_server";
+
+/// Discovery advertisements, not proof that every advertised endpoint is live.
+/// A partial observation may admit positive identities but must not remove an
+/// identity absent from the result. Removal grace belongs to the admission owner.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DiscoveryObservation {
+    pub sources: Vec<(String, String)>,
+    pub authoritative: bool,
+}
+
+/// Owns even a partially connected session and disconnects it on every exit.
+struct OwnedDiscoverySession(Arc<RwLock<Session>>);
+
+impl Drop for OwnedDiscoverySession {
+    fn drop(&mut self) {
+        self.0.read().disconnect();
+    }
+}
+
+fn observation_client(control: SessionOperationControl) -> Result<Client, String> {
+    control.check().map_err(|error| error.to_string())?;
+    ClientBuilder::new()
+        .application_name("Aggregation Discovery Observer")
+        .application_uri("urn:AggregationDiscoveryObserver")
+        .operation_control(control)
+        .request_timeout(OBSERVATION_REQUEST_TIMEOUT_MS)
+        .session_retry_limit(0)
+        .trust_server_certs(true)
+        .create_sample_keypair(false)
+        .client()
+        .ok_or_else(|| "Failed to create discovery observer client".into())
+}
+
+fn open_discovery_session(
+    url: &str,
+    control: SessionOperationControl,
+) -> Result<OwnedDiscoverySession, String> {
+    let mut client = observation_client(control)?;
+    let endpoint: EndpointDescription = (
+        url,
+        SecurityPolicy::None.to_str(),
+        MessageSecurityMode::None,
+        UserTokenPolicy::anonymous(),
+    )
+        .into();
+    // Discovery services require an open channel, not an activated session.
+    // Avoid GetEndpoints and its strict endpoint-path comparison for mDNS URLs.
+    let session = OwnedDiscoverySession(client.new_session_from_info(endpoint)?);
+    session
+        .0
+        .read()
+        .connect()
+        .map_err(|error| error.to_string())?;
+    Ok(session)
+}
+
+fn check_discovery_response(response: &FindServersResponse) -> Result<(), String> {
+    let status = response.response_header.service_result;
+    if status.is_good() {
+        Ok(())
+    } else {
+        Err(format!("FindServers returned {status}"))
+    }
+}
+
+fn observe_network_identity(
+    url: &str,
+    control: SessionOperationControl,
+) -> Result<FindServersResponse, String> {
+    let session = open_discovery_session(url, control)?;
+    let response =
+        find_servers(Arc::clone(&session.0), url, None, None).map_err(|error| error.to_string())?;
+    check_discovery_response(&response)?;
+    Ok(response)
+}
+
+fn advertised_sources(response: FindServersResponse) -> (Vec<(String, String)>, bool) {
+    let mut sources = Vec::new();
+    let mut complete = true;
+    for application in response.servers.unwrap_or_default() {
+        let name = application.application_uri.as_ref();
+        if name == LOCAL_LDS_URI || application.application_type == ApplicationType::DiscoveryServer
+        {
+            continue;
+        }
+        if name.is_empty() {
+            complete = false;
+            continue;
+        }
+        let urls = application.discovery_urls.unwrap_or_default();
+        if urls.is_empty() {
+            complete = false;
+        }
+        for url in urls {
+            // Do not probe reachability or turn a transient TCP failure into an
+            // absent registration. Preparation validates connectivity later.
+            if parse_opc_tcp_endpoint(url.as_ref()).is_none() {
+                complete = false;
+                continue;
+            }
+            sources.push((name.to_string(), url.as_ref().to_string()));
+        }
+    }
+    (sources, complete)
+}
+
+#[derive(Clone, Debug)]
+struct CachedNetworkIdentity {
+    sources: Vec<(String, String)>,
+    resolved_at: Instant,
+    refresh_failed: bool,
+}
+
+/// One observer owns its rotating mDNS identity cache. A complete current mDNS
+/// listing prunes vanished advertisements. Known identities are refreshed within
+/// the shared cycle budget rather than repeatedly resolving only the first page.
+/// Cached identities are advertisements, not ongoing connectivity guarantees.
+/// Their maximum permitted age is 300 seconds. Beyond that age, or after any
+/// failed refresh, observations are partial until resolution succeeds again.
+#[derive(Default)]
+pub struct DiscoveryObserver {
+    network_identities: HashMap<String, CachedNetworkIdentity>,
+    scan_cursor: usize,
+}
+
+impl DiscoveryObserver {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Isolate recoverable Rust panics in the read-only protocol observer. It
+    /// owns no aggregation mutations. Discard a possibly incomplete cache and
+    /// let the next cycle open a fresh channel. Native faults are not caught.
+    pub fn observe_resilient(
+        &mut self,
+        control: SessionOperationControl,
+    ) -> Result<DiscoveryObservation, String> {
+        self.protected_observation(|observer| observer.observe(control))
+    }
+
+    fn protected_observation<F>(&mut self, observe: F) -> Result<DiscoveryObservation, String>
+    where
+        F: FnOnce(&mut Self) -> Result<DiscoveryObservation, String>,
+    {
+        match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| observe(self))) {
+            Ok(result) => result,
+            Err(_) => {
+                *self = Self::new();
+                Err("discovery observer panicked, discarded its cache and will retry".into())
+            }
+        }
+    }
+
+    /// No config, namespace, NodeSet, rule or aggregation state is written here.
+    /// Protocol calls share the provided cooperative budget. Native DNS and local
+    /// filesystem work still require ownership of an unresponsive outer worker.
+    pub fn observe(
+        &mut self,
+        control: SessionOperationControl,
+    ) -> Result<DiscoveryObservation, String> {
+        let session = open_discovery_session("opc.tcp://127.0.0.1:4840", control.clone())?;
+        let response = find_servers(Arc::clone(&session.0), "", None, None)
+            .map_err(|error| format!("LDS FindServers failed: {error}"))?;
+        check_discovery_response(&response)?;
+        let network = find_servers_on_network(Arc::clone(&session.0))
+            .map_err(|error| format!("FindServersOnNetwork failed: {error}"));
+        drop(session);
+        Ok(self
+            .merge(
+                response,
+                network,
+                &control,
+                MAX_NETWORK_IDENTITY_LOOKUPS,
+                Instant::now(),
+                observe_network_identity,
+            )
+            .0)
+    }
+
+    fn merge<F>(
+        &mut self,
+        response: FindServersResponse,
+        network: Result<FindServersOnNetworkResponse, String>,
+        control: &SessionOperationControl,
+        max_lookups: usize,
+        now: Instant,
+        mut lookup: F,
+    ) -> (DiscoveryObservation, usize)
+    where
+        F: FnMut(&str, SessionOperationControl) -> Result<FindServersResponse, String>,
+    {
+        let started = Instant::now();
+        let (mut sources, mut authoritative) = advertised_sources(response);
+        let primary_urls: HashSet<String> = sources
+            .iter()
+            .map(|(_, url)| discovery_url_key(url).to_string())
+            .collect();
+        let primary_names: HashSet<String> = sources.iter().map(|(name, _)| name.clone()).collect();
+        let network = match network {
+            Ok(network) if network.response_header.service_result.is_good() => network,
+            _ => {
+                // A missing network listing cannot confirm disappearance. Retain
+                // only still-fresh positive cached identities and prohibit removal.
+                for cached in self.network_identities.values() {
+                    if now.saturating_duration_since(cached.resolved_at) <= NETWORK_IDENTITY_MAX_AGE
+                    {
+                        sources.extend(
+                            cached
+                                .sources
+                                .iter()
+                                .filter(|(name, url)| {
+                                    !primary_urls.contains(discovery_url_key(url))
+                                        && !primary_names.contains(name)
+                                })
+                                .cloned(),
+                        );
+                    }
+                }
+                sources.sort();
+                sources.dedup();
+                return (
+                    DiscoveryObservation {
+                        sources,
+                        authoritative: false,
+                    },
+                    0,
+                );
+            }
+        };
+        let mut advertised = std::collections::BTreeMap::new();
+        for server in network.servers.unwrap_or_default() {
+            if server_has_capability(&server, "LDS") {
+                continue;
+            }
+            let url = server.discovery_url.as_ref();
+            if parse_opc_tcp_endpoint(url).is_none() {
+                authoritative = false;
+                continue;
+            }
+            advertised
+                .entry(discovery_url_key(url).to_string())
+                .or_insert_with(|| url.to_string());
+        }
+        // Pruning follows the complete mDNS record listing, never a failed TCP
+        // identity lookup. A failed refresh is explicitly incomplete information.
+        self.network_identities
+            .retain(|key, _| advertised.contains_key(key));
+        let mut candidates: Vec<_> = advertised
+            .into_iter()
+            .filter(|(key, _)| !primary_urls.contains(key))
+            .collect();
+        if !candidates.is_empty() {
+            let offset = self.scan_cursor % candidates.len();
+            candidates.rotate_left(offset);
+        }
+        let mut attempted = 0;
+        for (key, url) in &candidates {
+            if attempted >= max_lookups || control.check().is_err() {
+                break;
+            }
+            attempted += 1;
+            match lookup(url, control.clone()) {
+                Ok(direct) if check_discovery_response(&direct).is_ok() => {
+                    let (discovered, complete) = advertised_sources(direct);
+                    if discovered.is_empty() {
+                        if let Some(cached) = self.network_identities.get_mut(key) {
+                            cached.refresh_failed = true;
+                        }
+                    } else {
+                        self.network_identities.insert(
+                            key.clone(),
+                            CachedNetworkIdentity {
+                                sources: discovered,
+                                resolved_at: now + started.elapsed(),
+                                refresh_failed: !complete,
+                            },
+                        );
+                    }
+                }
+                Err(_) | Ok(_) => {
+                    if let Some(cached) = self.network_identities.get_mut(key) {
+                        cached.refresh_failed = true;
+                    }
+                }
+            }
+        }
+        self.scan_cursor = if candidates.is_empty() {
+            0
+        } else {
+            (self.scan_cursor % candidates.len() + attempted.max(1)) % candidates.len()
+        };
+        let completed_at = now + started.elapsed();
+        // Coverage may be complete after cache warmup even if this refresh scans
+        // fewer records than are advertised. Every unrefreshed identity must
+        // still be fresh and its most recent attempted refresh successful.
+        for (key, _) in candidates {
+            match self.network_identities.get(&key) {
+                Some(cached)
+                    if completed_at.saturating_duration_since(cached.resolved_at)
+                        <= NETWORK_IDENTITY_MAX_AGE =>
+                {
+                    authoritative &= !cached.refresh_failed;
+                    sources.extend(cached.sources.iter().cloned());
+                }
+                _ => authoritative = false,
+            }
+        }
+        sources.sort();
+        sources.dedup();
+        (
+            DiscoveryObservation {
+                sources,
+                authoritative,
+            },
+            attempted,
+        )
+    }
+}
+
+// One-shot compatibility helper. The long-running application must retain one
+// DiscoveryObserver so mDNS-only populations can complete cache warmup.
+pub fn discover_observation() -> Result<DiscoveryObservation, String> {
+    discover_observation_with_control(SessionOperationControl::new(OBSERVATION_BUDGET))
+}
+
+pub fn discover_observation_with_control(
+    control: SessionOperationControl,
+) -> Result<DiscoveryObservation, String> {
+    DiscoveryObserver::new().observe(control)
+}
+
+#[cfg(test)]
+fn merge_observation<F>(
+    response: FindServersResponse,
+    network: Result<FindServersOnNetworkResponse, String>,
+    control: &SessionOperationControl,
+    scan_start: usize,
+    max_lookups: usize,
+    lookup: F,
+) -> (DiscoveryObservation, usize)
+where
+    F: FnMut(&str, SessionOperationControl) -> Result<FindServersResponse, String>,
+{
+    let mut observer = DiscoveryObserver::new();
+    observer.scan_cursor = scan_start;
+    observer.merge(
+        response,
+        network,
+        control,
+        max_lookups,
+        Instant::now(),
+        lookup,
+    )
+}
 
 // Notification-Typen für Server-Events (behalten für Kompatibilität)
 #[derive(Debug, Clone)]
@@ -384,19 +744,63 @@ fn merge_network_discovered_servers(
     }
 }
 
-// Namespaces von einem Server abfragen
+// Legacy callers retain this entry point. The supervised application passes
+// its own shared control through get_namespaces_controlled instead.
 pub fn get_namespaces(server_url: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    println!("\n=== Lese Namespaces von {} ===", server_url);
+    get_namespaces_controlled(
+        server_url,
+        SessionOperationControl::new(Duration::from_secs(60)),
+    )
+}
 
-    let mut client = ClientBuilder::new()
-        .application_name("Namespace Reader")
-        .application_uri("urn:NamespaceReader")
-        .trust_server_certs(true)
-        .create_sample_keypair(true)
-        .session_retry_limit(3)
-        .client()
-        .ok_or("Failed to create OPC UA client")?;
+fn namespace_values(response: SupportedMessage) -> Result<Vec<String>, String> {
+    let SupportedMessage::ReadResponse(response) = response else {
+        return Err("Unexpected response to NamespaceArray Read".into());
+    };
+    if !response.response_header.service_result.is_good() {
+        return Err(format!(
+            "NamespaceArray Read failed: {}",
+            response.response_header.service_result
+        ));
+    }
+    let results = response
+        .results
+        .ok_or("NamespaceArray Read has no results")?;
+    if results.len() != 1 {
+        return Err("NamespaceArray Read must contain exactly one result".into());
+    }
+    let result = results.into_iter().next().unwrap();
+    if let Some(status) = result.status {
+        if !status.is_good() {
+            return Err(format!("NamespaceArray has status {status}"));
+        }
+    }
+    let Some(opcua::types::Variant::Array(array)) = result.value else {
+        return Err("NamespaceArray value is not an array".into());
+    };
+    if array.values.is_empty() {
+        return Err("NamespaceArray is empty".into());
+    }
+    array
+        .values
+        .into_iter()
+        .map(|value| match value {
+            opcua::types::Variant::String(value) => value
+                .value()
+                .as_ref()
+                .cloned()
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| "NamespaceArray contains an empty URI".to_string()),
+            _ => Err("NamespaceArray contains a non-string element".into()),
+        })
+        .collect()
+}
 
+pub fn get_namespaces_controlled(
+    server_url: &str,
+    control: SessionOperationControl,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut client = observation_client(control.clone())?;
     let endpoint: EndpointDescription = (
         server_url,
         SecurityPolicy::None.to_str(),
@@ -404,61 +808,24 @@ pub fn get_namespaces(server_url: &str) -> Result<Vec<String>, Box<dyn std::erro
         UserTokenPolicy::anonymous(),
     )
         .into();
-
-    println!("Verbinde zu Endpoint: {}", server_url);
-
-    let session = client.connect_to_endpoint(endpoint, IdentityToken::Anonymous)?;
-    let session_guard = session.read();
-
-    let namespace_array_node = NodeId::new(0, 2255u32);
-
-    let read_value_id = ReadValueId {
-        node_id: namespace_array_node,
-        attribute_id: AttributeId::Value as u32,
-        index_range: UAString::null(),
-        data_encoding: opcua::types::QualifiedName::null(),
+    let session =
+        OwnedDiscoverySession(client.connect_to_endpoint(endpoint, IdentityToken::Anonymous)?);
+    control.check()?;
+    let response = {
+        let session_guard = session.0.read();
+        session_guard.send_request(ReadRequest {
+            request_header: session_guard.make_request_header(),
+            max_age: 0.0,
+            timestamps_to_return: TimestampsToReturn::Neither,
+            nodes_to_read: Some(vec![ReadValueId {
+                node_id: NodeId::new(0, 2255u32),
+                attribute_id: AttributeId::Value as u32,
+                index_range: UAString::null(),
+                data_encoding: opcua::types::QualifiedName::null(),
+            }]),
+        })?
     };
-
-    let request = ReadRequest {
-        request_header: session_guard.make_request_header(),
-        max_age: 0.0,
-        timestamps_to_return: TimestampsToReturn::Neither,
-        nodes_to_read: Some(vec![read_value_id]),
-    };
-
-    match session_guard.send_request(request) {
-        Ok(response) => {
-            if let SupportedMessage::ReadResponse(read_response) = response {
-                if let Some(results) = read_response.results {
-                    if let Some(result) = results.first() {
-                        if let Some(value) = &result.value {
-                            if let opcua::types::Variant::Array(arr) = value {
-                                let namespaces: Vec<String> = arr
-                                    .values
-                                    .iter()
-                                    .filter_map(|v| {
-                                        if let opcua::types::Variant::String(s) = v {
-                                            s.value().as_ref().cloned()
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .collect();
-
-                                println!("✓ Gefundene Namespaces: {:?}", namespaces);
-                                return Ok(namespaces);
-                            }
-                        }
-                    }
-                }
-            }
-            Err("Keine Namespaces gefunden".into())
-        }
-        Err(e) => {
-            eprintln!("Fehler beim Lesen der Namespaces: {:?}", e);
-            Err(e.into())
-        }
-    }
+    namespace_values(response).map_err(Into::into)
 }
 
 // Einmaliger Discovery-Zyklus.
@@ -583,5 +950,500 @@ mod tests {
                 .as_ref(),
             returned_with_slash
         );
+    }
+
+    fn registrations(entries: &[(&str, &str)]) -> super::FindServersResponse {
+        super::FindServersResponse {
+            response_header: opcua::types::ResponseHeader::new_good(
+                &opcua::types::RequestHeader::default(),
+            ),
+            servers: Some(
+                entries
+                    .iter()
+                    .map(|(name, url)| opcua::types::ApplicationDescription {
+                        application_uri: UAString::from(*name),
+                        application_type: opcua::types::ApplicationType::Server,
+                        discovery_urls: Some(vec![UAString::from(*url)]),
+                        ..Default::default()
+                    })
+                    .collect(),
+            ),
+        }
+    }
+
+    fn network_records(urls: &[&str]) -> super::FindServersOnNetworkResponse {
+        super::FindServersOnNetworkResponse {
+            response_header: opcua::types::ResponseHeader::new_good(
+                &opcua::types::RequestHeader::default(),
+            ),
+            last_counter_reset_time: opcua::types::DateTime::now(),
+            servers: Some(
+                urls.iter()
+                    .enumerate()
+                    .map(|(index, url)| ServerOnNetwork {
+                        record_id: index as u32,
+                        server_name: UAString::from("fixture"),
+                        discovery_url: UAString::from(*url),
+                        server_capabilities: None,
+                    })
+                    .collect(),
+            ),
+        }
+    }
+
+    #[test]
+    fn incomplete_mdns_retains_positive_lds_registrations_without_authorizing_removal() {
+        let (observed, attempts) = super::merge_observation(
+            registrations(&[("urn:registered", "opc.tcp://192.0.2.1:4860/")]),
+            Err("mDNS service unavailable".into()),
+            &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+            0,
+            64,
+            |_, _| panic!("no direct lookup should run"),
+        );
+        assert_eq!(attempts, 0);
+        assert!(!observed.authoritative);
+        assert_eq!(
+            observed.sources,
+            vec![("urn:registered".into(), "opc.tcp://192.0.2.1:4860/".into())]
+        );
+    }
+
+    #[test]
+    fn advertised_endpoint_needs_no_reachability_probe_and_duplicate_records_are_collapsed() {
+        let (observed, attempts) = super::merge_observation(
+            registrations(&[
+                ("urn:registered", "opc.tcp://192.0.2.1:4860/"),
+                ("urn:registered", "opc.tcp://192.0.2.1:4860/"),
+                (super::LOCAL_LDS_URI, "opc.tcp://127.0.0.1:4840"),
+            ]),
+            Ok(network_records(&["opc.tcp://192.0.2.1:4860"])),
+            &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+            0,
+            64,
+            |_, _| panic!("known advertisement must not trigger a probe"),
+        );
+        assert!(observed.authoritative);
+        assert_eq!(observed.sources.len(), 1);
+        assert_eq!(attempts, 0);
+    }
+
+    #[test]
+    fn failed_mdns_identity_does_not_discard_other_positive_sources() {
+        let (observed, attempts) = super::merge_observation(
+            registrations(&[("urn:registered", "opc.tcp://192.0.2.1:4860/")]),
+            Ok(network_records(&[
+                "opc.tcp://192.0.2.2:4860",
+                "opc.tcp://192.0.2.3:4860",
+            ])),
+            &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+            0,
+            64,
+            |url, _| {
+                if url.contains(".2:") {
+                    Err("offline".into())
+                } else {
+                    Ok(registrations(&[("urn:network", url)]))
+                }
+            },
+        );
+        assert_eq!(attempts, 2);
+        assert!(!observed.authoritative);
+        assert_eq!(observed.sources.len(), 2);
+        assert!(observed
+            .sources
+            .iter()
+            .any(|(name, _)| name == "urn:network"));
+    }
+
+    #[test]
+    fn finite_network_scan_rotates_and_reports_its_incomplete_coverage() {
+        let mut visited = Vec::new();
+        for start in 0..3 {
+            let (observed, attempts) = super::merge_observation(
+                registrations(&[]),
+                Ok(network_records(&[
+                    "opc.tcp://192.0.2.1:4860",
+                    "opc.tcp://192.0.2.2:4860",
+                    "opc.tcp://192.0.2.3:4860",
+                ])),
+                &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+                start,
+                1,
+                |url, _| {
+                    visited.push(url.to_string());
+                    Err("offline".into())
+                },
+            );
+            assert_eq!(attempts, 1);
+            assert!(!observed.authoritative);
+        }
+        visited.sort();
+        visited.dedup();
+        assert_eq!(visited.len(), 3);
+    }
+
+    #[test]
+    fn exhausted_cycle_budget_starts_no_additional_lookup() {
+        let (observed, attempts) = super::merge_observation(
+            registrations(&[("urn:registered", "opc.tcp://192.0.2.1:4860/")]),
+            Ok(network_records(&["opc.tcp://192.0.2.2:4860"])),
+            &super::SessionOperationControl::new(std::time::Duration::ZERO),
+            0,
+            64,
+            |_, _| panic!("expired observation must not start another operation"),
+        );
+        assert_eq!(attempts, 0);
+        assert!(!observed.authoritative);
+        assert_eq!(observed.sources.len(), 1);
+    }
+
+    fn namespace_response(
+        value: opcua::types::Variant,
+        status: Option<super::StatusCode>,
+    ) -> super::SupportedMessage {
+        super::SupportedMessage::ReadResponse(Box::new(opcua::types::ReadResponse {
+            response_header: opcua::types::ResponseHeader::new_good(
+                &opcua::types::RequestHeader::default(),
+            ),
+            results: Some(vec![opcua::types::DataValue {
+                value: Some(value),
+                status,
+                ..Default::default()
+            }]),
+            diagnostic_infos: None,
+        }))
+    }
+
+    fn string_array(values: Vec<UAString>) -> opcua::types::Variant {
+        opcua::types::Variant::Array(Box::new(
+            opcua::types::Array::new(
+                opcua::types::VariantTypeId::String,
+                values
+                    .into_iter()
+                    .map(opcua::types::Variant::String)
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap(),
+        ))
+    }
+
+    #[test]
+    fn namespace_read_rejects_bad_status_instead_of_accepting_its_value() {
+        let response = namespace_response(
+            string_array(vec![UAString::from("http://opcfoundation.org/UA/")]),
+            Some(super::StatusCode::BadNotReadable),
+        );
+        assert!(super::namespace_values(response)
+            .unwrap_err()
+            .contains("BadNotReadable"));
+    }
+
+    #[test]
+    fn namespace_read_preserves_indices_and_rejects_malformed_entries() {
+        let values = vec![
+            UAString::from("http://opcfoundation.org/UA/"),
+            UAString::from("urn:fixture"),
+        ];
+        assert_eq!(
+            super::namespace_values(namespace_response(string_array(values), None)).unwrap(),
+            vec!["http://opcfoundation.org/UA/", "urn:fixture"],
+        );
+        let values = vec![
+            UAString::from("http://opcfoundation.org/UA/"),
+            UAString::null(),
+        ];
+        assert!(super::namespace_values(namespace_response(string_array(values), None)).is_err());
+        assert!(super::namespace_values(namespace_response(
+            opcua::types::Variant::from(vec![1_i32]),
+            None
+        ))
+        .is_err());
+    }
+
+    #[test]
+    fn complete_direct_mdns_resolution_and_empty_snapshot_are_authoritative() {
+        let control = super::SessionOperationControl::new(std::time::Duration::from_secs(1));
+        let (observed, attempts) = super::merge_observation(
+            registrations(&[]),
+            Ok(network_records(&["opc.tcp://192.0.2.2:4860"])),
+            &control,
+            0,
+            64,
+            |url, _| Ok(registrations(&[("urn:network", url)])),
+        );
+        assert!(observed.authoritative);
+        assert_eq!(attempts, 1);
+        assert_eq!(observed.sources.len(), 1);
+        let (empty, attempts) = super::merge_observation(
+            registrations(&[]),
+            Ok(network_records(&[])),
+            &control,
+            0,
+            64,
+            |_, _| panic!("empty discovery must not probe"),
+        );
+        assert!(empty.authoritative);
+        assert!(empty.sources.is_empty());
+        assert_eq!(attempts, 0);
+    }
+
+    #[test]
+    fn malformed_advertisements_cannot_authorize_absence() {
+        let (observed, _) = super::merge_observation(
+            registrations(&[
+                ("", "opc.tcp://192.0.2.1:4860"),
+                ("urn:bad", "http://192.0.2.2/"),
+            ]),
+            Ok(network_records(&[])),
+            &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+            0,
+            64,
+            |_, _| panic!("no network candidates"),
+        );
+        assert!(!observed.authoritative);
+        assert!(observed.sources.is_empty());
+    }
+
+    fn cached_observation(
+        observer: &mut super::DiscoveryObserver,
+        urls: &[String],
+        now: super::Instant,
+        lookup: impl FnMut(
+            &str,
+            super::SessionOperationControl,
+        ) -> Result<super::FindServersResponse, String>,
+    ) -> super::DiscoveryObservation {
+        let refs = urls.iter().map(String::as_str).collect::<Vec<_>>();
+        observer
+            .merge(
+                registrations(&[]),
+                Ok(network_records(&refs)),
+                &super::SessionOperationControl::new(std::time::Duration::from_secs(10)),
+                64,
+                now,
+                lookup,
+            )
+            .0
+    }
+
+    fn identity_for_url(
+        url: &str,
+        _: super::SessionOperationControl,
+    ) -> Result<super::FindServersResponse, String> {
+        Ok(registrations(&[(&format!("urn:fixture:{url}"), url)]))
+    }
+
+    #[test]
+    fn hundred_mdns_only_sources_become_complete_after_bounded_cache_warmup() {
+        let mut observer = super::DiscoveryObserver::new();
+        let now = super::Instant::now();
+        let urls = (0..100)
+            .map(|index| format!("opc.tcp://192.0.2.1:{}/", 4860 + index))
+            .collect::<Vec<_>>();
+        let first = cached_observation(&mut observer, &urls, now, identity_for_url);
+        assert!(!first.authoritative);
+        assert_eq!(first.sources.len(), 64);
+        let second = cached_observation(
+            &mut observer,
+            &urls,
+            now + std::time::Duration::from_secs(1),
+            identity_for_url,
+        );
+        assert!(second.authoritative);
+        assert_eq!(second.sources.len(), 100);
+        let removed_url = urls[0].clone();
+        let remaining = urls[1..].to_vec();
+        let after_removal = cached_observation(
+            &mut observer,
+            &remaining,
+            now + std::time::Duration::from_secs(2),
+            identity_for_url,
+        );
+        assert!(after_removal.authoritative);
+        assert_eq!(after_removal.sources.len(), 99);
+        assert!(!after_removal
+            .sources
+            .iter()
+            .any(|(_, endpoint)| endpoint == &removed_url));
+        assert_eq!(observer.network_identities.len(), 99);
+    }
+
+    #[test]
+    fn unchanged_mdns_url_is_refreshed_and_replaces_its_previous_application_identity() {
+        let mut observer = super::DiscoveryObserver::new();
+        let now = super::Instant::now();
+        let urls = vec!["opc.tcp://192.0.2.1:4860/".to_string()];
+        let first = cached_observation(&mut observer, &urls, now, |url, _| {
+            Ok(registrations(&[("urn:old", url)]))
+        });
+        assert_eq!(first.sources[0].0, "urn:old");
+        let replacement = cached_observation(
+            &mut observer,
+            &urls,
+            now + std::time::Duration::from_secs(1),
+            |url, _| Ok(registrations(&[("urn:new", url)])),
+        );
+        assert!(replacement.authoritative);
+        assert_eq!(
+            replacement.sources,
+            vec![("urn:new".into(), urls[0].clone())]
+        );
+    }
+
+    #[test]
+    fn failed_cached_refresh_is_partial_and_cannot_fabricate_absence() {
+        let mut observer = super::DiscoveryObserver::new();
+        let now = super::Instant::now();
+        let urls = vec!["opc.tcp://192.0.2.1:4860/".to_string()];
+        let initial = cached_observation(&mut observer, &urls, now, identity_for_url);
+        let failed = cached_observation(
+            &mut observer,
+            &urls,
+            now + std::time::Duration::from_secs(1),
+            |_, _| Err("offline".into()),
+        );
+        assert!(!failed.authoritative);
+        assert_eq!(failed.sources, initial.sources);
+        let refs = urls.iter().map(String::as_str).collect::<Vec<_>>();
+        let unrefreshed = observer
+            .merge(
+                registrations(&[]),
+                Ok(network_records(&refs)),
+                &super::SessionOperationControl::new(std::time::Duration::ZERO),
+                64,
+                now + std::time::Duration::from_secs(2),
+                |_, _| panic!("expired cycle must retain the previous failed-refresh state"),
+            )
+            .0;
+        assert!(!unrefreshed.authoritative);
+        assert_eq!(unrefreshed.sources, initial.sources);
+        let recovered = cached_observation(
+            &mut observer,
+            &urls,
+            now + std::time::Duration::from_secs(3),
+            identity_for_url,
+        );
+        assert!(recovered.authoritative);
+    }
+
+    #[test]
+    fn network_listing_failure_does_not_prune_cached_identities() {
+        let mut observer = super::DiscoveryObserver::new();
+        let now = super::Instant::now();
+        let urls = vec!["opc.tcp://192.0.2.1:4860/".to_string()];
+        let initial = cached_observation(&mut observer, &urls, now, identity_for_url);
+        let partial = observer
+            .merge(
+                registrations(&[]),
+                Err("network listing failed".into()),
+                &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+                64,
+                now + std::time::Duration::from_secs(1),
+                |_, _| panic!("no complete network listing"),
+            )
+            .0;
+        assert!(!partial.authoritative);
+        assert_eq!(partial.sources, initial.sources);
+        assert_eq!(observer.network_identities.len(), 1);
+        let absent = cached_observation(
+            &mut observer,
+            &[],
+            now + std::time::Duration::from_secs(2),
+            identity_for_url,
+        );
+        assert!(absent.authoritative);
+        assert!(absent.sources.is_empty());
+        assert!(observer.network_identities.is_empty());
+    }
+
+    #[test]
+    fn expired_identity_without_successful_refresh_is_partial_not_authoritative_absence() {
+        let mut observer = super::DiscoveryObserver::new();
+        let now = super::Instant::now();
+        let urls = vec!["opc.tcp://192.0.2.1:4860/".to_string()];
+        cached_observation(&mut observer, &urls, now, identity_for_url);
+        let expired = cached_observation(
+            &mut observer,
+            &urls,
+            now + super::NETWORK_IDENTITY_MAX_AGE + std::time::Duration::from_secs(1),
+            |_, _| Err("offline".into()),
+        );
+        assert!(!expired.authoritative);
+        assert!(expired.sources.is_empty());
+        assert_eq!(observer.network_identities.len(), 1);
+    }
+
+    #[test]
+    fn fresh_primary_identity_supersedes_cache_during_network_listing_failure() {
+        let mut observer = super::DiscoveryObserver::new();
+        let now = super::Instant::now();
+        let url = "opc.tcp://192.0.2.1:4860/";
+        cached_observation(&mut observer, &[url.to_string()], now, |url, _| {
+            Ok(registrations(&[("urn:old", url)]))
+        });
+        let partial = observer
+            .merge(
+                registrations(&[("urn:new", url)]),
+                Err("mDNS unavailable".into()),
+                &super::SessionOperationControl::new(std::time::Duration::from_secs(1)),
+                64,
+                now + std::time::Duration::from_secs(1),
+                |_, _| panic!("no network listing"),
+            )
+            .0;
+        assert!(!partial.authoritative);
+        assert_eq!(partial.sources, vec![("urn:new".into(), url.to_string())]);
+    }
+}
+
+#[cfg(test)]
+mod observer_recovery_tests {
+    use super::*;
+
+    fn seeded() -> DiscoveryObserver {
+        let mut observer = DiscoveryObserver::new();
+        observer.scan_cursor = 10;
+        observer.network_identities.insert(
+            "old".into(),
+            CachedNetworkIdentity {
+                sources: vec![("urn:old".into(), "opc.tcp://localhost:51001".into())],
+                resolved_at: Instant::now(),
+                refresh_failed: false,
+            },
+        );
+        observer
+    }
+
+    #[test]
+    fn observer_panic_discards_partial_cache_and_next_cycle_can_succeed() {
+        let mut observer = seeded();
+        assert!(observer
+            .protected_observation(|_| panic!("simulated protocol panic"))
+            .is_err());
+        assert!(observer.network_identities.is_empty());
+        assert_eq!(observer.scan_cursor, 0);
+        let result = observer
+            .protected_observation(|_| {
+                Ok(DiscoveryObservation {
+                    sources: vec![("urn:new".into(), "opc.tcp://localhost:51002".into())],
+                    authoritative: true,
+                })
+            })
+            .unwrap();
+        assert_eq!(result.sources.len(), 1);
+        assert!(result.authoritative);
+    }
+
+    #[test]
+    fn disconnected_observation_is_an_error_not_an_authoritative_empty_snapshot() {
+        let mut observer = seeded();
+        for _ in 0..100 {
+            assert!(observer
+                .protected_observation(|_| Err("BadNotConnected".into()))
+                .is_err());
+        }
+        assert_eq!(observer.network_identities.len(), 1);
+        assert_eq!(observer.scan_cursor, 10);
     }
 }

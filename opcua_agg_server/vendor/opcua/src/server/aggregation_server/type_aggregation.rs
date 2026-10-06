@@ -1,5 +1,5 @@
 use std::collections::hash_map::DefaultHasher;
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
@@ -56,6 +56,7 @@ pub fn aggregate_types(
     standard_namespaces: &mut Vec<StandardizedNamespace>,
     lserver: &mut LowerServer,
 ) -> Result<(), TypeAggregationError> {
+    lserver.check_operation()?;
     // Type Aggregation Process:
     // 1. Traverse all ChildNodes (HasSubType) starting at the Type Folder.
     // 2. When reching a type node that is not namespace 0 hash it (see 'Hashing').
@@ -81,10 +82,18 @@ pub fn aggregate_types(
     }
     // Hash only one type at a time to avoid race conditions
     let mut global_type_hashmap = global_type_hashmap_p.write();
+    let mut visited = HashSet::new();
     while let Some((og_parent, rdesc)) = queue.pop_front() {
+        lserver.check_operation()?;
         let og_node = rdesc.node_id.node_id.clone();
+        if !visited.insert(og_node.clone()) {
+            continue;
+        }
         debug!(message = "Aggregating type", source_node = ?og_node);
-        let ns_url = &lserver.namespace_array[og_node.namespace as usize];
+        let ns_url = lserver
+            .namespace_array
+            .get(og_node.namespace as usize)
+            .ok_or_else(|| TypeAggregationError::InvalidTypeGraph(og_node.clone()))?;
         let aggserver_type = if let Some(ns) = standard_namespaces
             .iter()
             .find(|n| (&n.url == ns_url) && n.nsid.is_some())
@@ -144,6 +153,7 @@ pub fn aggregate_types(
     }
     drop(global_type_hashmap);
     for (nsid, url) in lserver.namespace_array.iter().enumerate() {
+        lserver.check_operation()?;
         for stand_ns in &mut *standard_namespaces {
             if &stand_ns.url == url {
                 if let Some(nsid_aggs) = stand_ns.nsid {
@@ -174,6 +184,32 @@ pub fn hash_node(
     og_node: &NodeId,
     is_type: bool,
 ) -> Result<u64, TypeAggregationError> {
+    hash_node_inner(
+        session_p,
+        map_db,
+        global_type_hashmap,
+        lserver,
+        og_parent_opt,
+        og_node,
+        is_type,
+        &mut HashSet::new(),
+    )
+}
+
+fn hash_node_inner(
+    session_p: &Arc<RwLock<Session>>,
+    map_db: &MapDatabaseConnection,
+    global_type_hashmap: &mut BiMap<u64, NodeId>,
+    lserver: &mut LowerServer,
+    og_parent_opt: Option<&NodeId>,
+    og_node: &NodeId,
+    is_type: bool,
+    active: &mut HashSet<NodeId>,
+) -> Result<u64, TypeAggregationError> {
+    lserver.check_operation()?;
+    if active.len() >= 128 || !active.insert(og_node.clone()) {
+        return Err(TypeAggregationError::InvalidTypeGraph(og_node.clone()));
+    }
     // Hashing rules:
     // Characteristics of a type that are used to calculate the hash are the following:
     // - The supertype
@@ -252,6 +288,7 @@ pub fn hash_node(
     hrefs.sort_by_key(|r| r.browse_name.name.value().clone().unwrap_or_default());
 
     for rdesc in hrefs {
+        lserver.check_operation()?;
         // 3a. Hash referenced node
         if rdesc.reference_type_id == ReferenceTypeId::HasSubtype.into() {
             // Ignore subtypes because they do not characterize the type itself
@@ -261,7 +298,7 @@ pub fn hash_node(
             // Hash of ns0 nodes are just their nodeid, since they are unique
             rdesc.node_id.node_id.hash(&mut hasher);
         } else if is_type_node(&rdesc.node_class) {
-            hash_node(
+            hash_node_inner(
                 session_p,
                 map_db,
                 global_type_hashmap,
@@ -269,10 +306,11 @@ pub fn hash_node(
                 None,
                 &rdesc.node_id.node_id,
                 true,
+                active,
             )?
             .hash(&mut hasher);
         } else {
-            hash_node(
+            hash_node_inner(
                 session_p,
                 map_db,
                 global_type_hashmap,
@@ -280,6 +318,7 @@ pub fn hash_node(
                 None,
                 &rdesc.node_id.node_id,
                 false,
+                active,
             )?
             .hash(&mut hasher);
         }
@@ -303,6 +342,7 @@ pub fn hash_node(
     nrefs.sort_by_key(|r| r.browse_name.name.value().clone().unwrap_or_default());
 
     for rdesc in nrefs {
+        lserver.check_operation()?;
         // 3a. Hash referenced node
         if rdesc.node_id.node_id.namespace == 0 {
             // Hash of ns0 nodes are just their nodeid, since they are unique
@@ -322,6 +362,7 @@ pub fn hash_node(
 
     let node_hash = hasher.finish();
     debug!(message = "Hash calculated.", hash = node_hash);
+    active.remove(og_node);
     return Ok(node_hash);
 }
 
@@ -345,9 +386,14 @@ fn copy_type(
     queue.push_back((dest_root_parent, root_ref));
 
     let mut new_nodeid: Option<NodeId> = None;
+    let mut visited = HashSet::new();
 
     while let Some((dest_parent, rdesc)) = queue.pop_front() {
+        lserver.check_operation()?;
         let og_node = &rdesc.node_id.node_id;
+        if !visited.insert(og_node.clone()) {
+            continue;
+        }
         let og_browsename = session_p.read().read_browsename(og_node)?;
 
         let dest_refid = determine_dest_nid(map_db, lserver, &rdesc.reference_type_id)?;
@@ -374,6 +420,10 @@ fn copy_type(
             type_definition: dest_typedef.into(),
         };
 
+        lserver.check_operation()?;
+        if !address_space_p.read().node_exists(&dest_node) {
+            lserver.created_nodes.push(dest_node.clone());
+        }
         copy_node(
             session_p,
             address_space_p,

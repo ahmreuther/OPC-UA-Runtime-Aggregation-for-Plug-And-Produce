@@ -10,7 +10,7 @@ License text and summary: <https://creativecommons.org/licenses/by/4.0/>
 
 Suggested attribution:
 
-> Reuther, A.; Bönisch, N.; Schleich, B. (2026). Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug & Produce Systems: research software and curated research data, version 0.1.0. https://git.rwth-aachen.de/ai-in-production/publications/ieee-ojies-2026
+> Reuther, A.; Bönisch, N.; Schleich, B. (2026). Runtime Aggregation of Heterogeneous OPC UA Information Models for Plug & Produce Systems: research software and curated research data, version 0.2.0. https://git.rwth-aachen.de/ai-in-production/publications/ieee-ojies-2026
 
 This license does not grant rights in source code, excluded robot models, trademarks, standards text, or other third-party material. Source code remains governed by `LICENSE` and the notices in `THIRD_PARTY_NOTICES.md`; deliberately excluded material is described in `RESEARCH_DATA.md`.
 

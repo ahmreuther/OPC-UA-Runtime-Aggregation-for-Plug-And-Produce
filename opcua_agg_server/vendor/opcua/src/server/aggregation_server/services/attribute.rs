@@ -22,7 +22,7 @@ use crate::server::{
 
 use super::service_delegation::delegate_service_call;
 use super::service_delegation::DecidingField;
-use super::service_delegation::TransformableItem;
+use super::service_delegation::{ServiceResultItem, TransformableItem};
 
 pub(crate) trait AggServerAttributeService {
     fn read_lower_servers(
@@ -65,6 +65,18 @@ impl TransformableItem for WriteValue {
 struct AttributeDataValue {
     dv: DataValue,
     attribute_id: u32,
+}
+
+impl ServiceResultItem for AttributeDataValue {
+    fn from_status_code(status_code: StatusCode) -> Self {
+        Self {
+            dv: DataValue {
+                status: Some(status_code),
+                ..DataValue::null()
+            },
+            attribute_id: 13,
+        }
+    }
 }
 
 impl TransformableItem for AttributeDataValue {

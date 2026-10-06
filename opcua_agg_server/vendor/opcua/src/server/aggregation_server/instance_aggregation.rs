@@ -312,6 +312,41 @@ fn rule_applies_to_source(
         .unwrap_or(true))
 }
 
+/// Exact stored rule identity for preserving pending references across replacement.
+/// Borrowing every field avoids serializing or cloning the complete rule collection.
+#[derive(PartialEq, Eq, Hash)]
+pub(crate) struct InstanceMappingRuleKey<'a> {
+    target_node: &'a [RuleBrowsePathElement],
+    source_node: &'a [RuleBrowsePathElement],
+    ref_type: &'a [RuleBrowsePathElement],
+    is_forward: bool,
+    source_id: Option<&'a str>,
+    source_node_id: Option<(&'a str, &'a str)>,
+    reference_type: Option<(&'a str, &'a str)>,
+    merge_policy: std::mem::Discriminant<RuleMergePolicy>,
+    merge_key: &'a [RuleBrowsePathElement],
+}
+
+pub(crate) fn mapping_rule_key(rule: &InstanceMappingRule) -> InstanceMappingRuleKey<'_> {
+    InstanceMappingRuleKey {
+        target_node: &rule.target_node,
+        source_node: &rule.source_node,
+        ref_type: &rule.ref_type,
+        is_forward: rule.is_forward,
+        source_id: rule.source_id.as_deref(),
+        source_node_id: rule
+            .source_node_id
+            .as_ref()
+            .map(|value| (value.namespace_uri.as_str(), value.identifier.as_str())),
+        reference_type: rule
+            .reference_type
+            .as_ref()
+            .map(|value| (value.namespace_uri.as_str(), value.identifier.as_str())),
+        merge_policy: std::mem::discriminant(&rule.merge_policy),
+        merge_key: &rule.merge_key,
+    }
+}
+
 /// Indexes the canonical rule vector without changing its stable positions.
 ///
 /// `IncompleteMapping::rule_id` continues to address the public canonical
@@ -321,6 +356,7 @@ fn rule_applies_to_source(
 pub(crate) struct InstanceMappingRuleIndex {
     indices_by_source: HashMap<String, Vec<usize>>,
     unscoped_indices: Vec<usize>,
+    rule_count: usize,
 }
 
 impl InstanceMappingRuleIndex {
@@ -343,10 +379,86 @@ impl InstanceMappingRuleIndex {
         Ok(Self {
             indices_by_source,
             unscoped_indices,
+            rule_count: rules.len(),
         })
     }
 
-    fn indices_for_source(&self, source_url: &str) -> Vec<usize> {
+    pub(crate) fn len(&self) -> usize {
+        self.rule_count
+    }
+
+    /// Append an independently validated delta without rescanning old rules.
+    pub(crate) fn append(&mut self, delta: Self) -> Result<(), MappingError> {
+        let new_count = self
+            .rule_count
+            .checked_add(delta.rule_count)
+            .ok_or_else(|| MappingError::InvalidRule("mapping rule count overflow".to_string()))?;
+        let offset = self.rule_count;
+        for (source, indices) in delta.indices_by_source {
+            self.indices_by_source
+                .entry(source)
+                .or_default()
+                .extend(indices.into_iter().map(|index| index + offset));
+        }
+        self.unscoped_indices.extend(
+            delta
+                .unscoped_indices
+                .into_iter()
+                .map(|index| index + offset),
+        );
+        self.rule_count = new_count;
+        Ok(())
+    }
+
+    /// Remove only the appended suffix and the source buckets it touches.
+    /// Check the complete suffix before mutating the index.
+    pub(crate) fn truncate(
+        &mut self,
+        rules: &[InstanceMappingRule],
+        len: usize,
+    ) -> Result<(), MappingError> {
+        if self.rule_count != rules.len() || len > rules.len() {
+            return Err(MappingError::InvalidRule(
+                "rule vector and source index disagree on truncation bounds".to_string(),
+            ));
+        }
+        let mut removed_by_source: HashMap<&str, usize> = HashMap::new();
+        let mut removed_unscoped = 0;
+        for (rule_id, rule) in rules.iter().enumerate().skip(len).rev() {
+            let (indices, removed) = if let Some(source) = rule.source_id.as_deref() {
+                let source = normalized_endpoint(source);
+                let indices = self.indices_by_source.get(source).ok_or_else(|| {
+                    MappingError::InvalidRule("missing source index on truncation".to_string())
+                })?;
+                (indices, removed_by_source.entry(source).or_default())
+            } else {
+                (&self.unscoped_indices, &mut removed_unscoped)
+            };
+            let position = indices.len().checked_sub(*removed + 1);
+            if position.and_then(|position| indices.get(position)) != Some(&rule_id) {
+                return Err(MappingError::InvalidRule(
+                    "source index suffix does not match canonical rules".to_string(),
+                ));
+            }
+            *removed += 1;
+        }
+        for (source, count) in removed_by_source {
+            let indices = self
+                .indices_by_source
+                .get_mut(source)
+                .expect("checked source index");
+            indices.truncate(indices.len() - count);
+            if indices.is_empty() {
+                self.indices_by_source.remove(source);
+            }
+        }
+        self.unscoped_indices
+            .truncate(self.unscoped_indices.len() - removed_unscoped);
+        self.rule_count = len;
+        Ok(())
+    }
+
+    pub(crate) fn indices_for_source(&self, source_url: &str) -> Vec<usize> {
         let scoped_indices = self
             .indices_by_source
             .get(normalized_endpoint(source_url))
@@ -465,6 +577,7 @@ pub fn aggregate_instances(
     incomplete_mappings_p: Arc<RwLock<Vec<IncompleteMapping>>>,
 ) -> Result<(), MappingError> {
     let rule_index = {
+        lower_server.check_operation()?;
         let rules = instance_mapping_rules.read();
         InstanceMappingRuleIndex::new(&rules)?
     };
@@ -488,6 +601,7 @@ pub(crate) fn aggregate_instances_indexed(
     lower_server: &mut LowerServer,
     incomplete_mappings_p: Arc<RwLock<Vec<IncompleteMapping>>>,
 ) -> Result<(), MappingError> {
+    lower_server.check_operation()?;
     let rules = instance_mapping_rules.read();
     let rule_indices = instance_mapping_rule_index.read();
     let mut incomplete_mappings = incomplete_mappings_p.write();
@@ -495,6 +609,7 @@ pub(crate) fn aggregate_instances_indexed(
     let mut source_browse_cache = SourceBrowseCache::default();
 
     for mapping in pending {
+        lower_server.check_operation()?;
         let rule = rules.get(mapping.rule_id).ok_or_else(|| {
             MappingError::InvalidRule(format!("missing rule {}", mapping.rule_id))
         })?;
@@ -535,6 +650,7 @@ pub(crate) fn aggregate_instances_indexed(
     }
 
     'rules: for rule_index in rule_indices.indices_for_source(&lower_server.url) {
+        lower_server.check_operation()?;
         let rule = rules.get(rule_index).ok_or_else(|| {
             MappingError::InvalidRule(format!("missing indexed rule {rule_index}"))
         })?;
@@ -576,6 +692,8 @@ pub(crate) fn aggregate_instances_indexed(
         let address_space = address_space_p.read();
         let Some(target) = resolve_target_path(&address_space, &rule.target_node)? else {
             incomplete_mappings.push(IncompleteMapping {
+                source_server_id: lower_server.id,
+                source_server_name: lower_server.name.clone(),
                 rule_id: rule_index,
                 source_nid: aggregated_source,
                 source_bname: source_browse_name,
@@ -664,6 +782,52 @@ mod tests {
         invalid.source_node.clear();
 
         assert!(InstanceMappingRuleIndex::new(&[invalid]).is_err());
+    }
+
+    #[test]
+    fn delta_index_and_suffix_rollback_preserve_scoped_order() {
+        let mut rules = vec![indexed_rule(Some("opc.tcp://a")), indexed_rule(None)];
+        let mut index = InstanceMappingRuleIndex::new(&rules).unwrap();
+        let delta = vec![
+            indexed_rule(Some("opc.tcp://b")),
+            indexed_rule(None),
+            indexed_rule(Some("opc.tcp://a/")),
+            indexed_rule(Some("opc.tcp://b/")),
+        ];
+        index
+            .append(InstanceMappingRuleIndex::new(&delta).unwrap())
+            .unwrap();
+        rules.extend(delta);
+        assert_eq!(index.indices_for_source("opc.tcp://a/"), vec![0, 1, 3, 4]);
+        assert_eq!(index.indices_for_source("opc.tcp://b"), vec![1, 2, 3, 5]);
+        assert_eq!(index.indices_for_source("opc.tcp://other"), vec![1, 3]);
+        index.truncate(&rules, 3).unwrap();
+        rules.truncate(3);
+        assert_eq!(index.indices_for_source("opc.tcp://a"), vec![0, 1]);
+        assert_eq!(index.indices_for_source("opc.tcp://b"), vec![1, 2]);
+        index.truncate(&rules, 2).unwrap();
+        rules.truncate(2);
+        assert!(!index.indices_by_source.contains_key("opc.tcp://b"));
+        index.truncate(&rules, 0).unwrap();
+        assert_eq!(index.len(), 0);
+        assert!(index.indices_by_source.is_empty());
+        assert!(index.unscoped_indices.is_empty());
+    }
+
+    #[test]
+    fn invalid_index_suffix_is_rejected_before_any_bucket_changes() {
+        let rules = vec![
+            indexed_rule(Some("opc.tcp://a")),
+            indexed_rule(Some("opc.tcp://b")),
+            indexed_rule(Some("opc.tcp://a")),
+        ];
+        let mut index = InstanceMappingRuleIndex::new(&rules).unwrap();
+        index.indices_by_source.get_mut("opc.tcp://b").unwrap()[0] = 0;
+        assert!(index.truncate(&rules, 1).is_err());
+        assert_eq!(index.len(), 3);
+        assert_eq!(index.indices_for_source("opc.tcp://a"), vec![0, 2]);
+        assert_eq!(index.indices_for_source("opc.tcp://b"), vec![0]);
+        assert!(index.truncate(&rules, 4).is_err());
     }
 
     #[test]

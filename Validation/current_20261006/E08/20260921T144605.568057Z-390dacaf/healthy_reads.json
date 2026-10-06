@@ -1,0 +1,422 @@
+[
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 8848.27239997685,
+    "duration_ms": 0.6735000060871243
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 8954.091400024481,
+    "duration_ms": 1.306000049225986
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9070.60380000621,
+    "duration_ms": 1.3017000164836645
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9172.559400089085,
+    "duration_ms": 1.3207999290898442
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9287.763200001791,
+    "duration_ms": 1.0221999837085605
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9403.728100005537,
+    "duration_ms": 1.1766999959945679
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9521.204699994996,
+    "duration_ms": 1.6407000366598368
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9637.792900088243,
+    "duration_ms": 1.1031999019905925
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9739.029900054447,
+    "duration_ms": 1.193900010548532
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9855.434500030242,
+    "duration_ms": 1.5916000120341778
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 9971.742000081576,
+    "duration_ms": 1.397299929521978
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10086.782500031404,
+    "duration_ms": 1.5629000263288617
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10205.330800032243,
+    "duration_ms": 1.1300999904051423
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10311.183599987999,
+    "duration_ms": 1.254500006325543
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10421.93130007945,
+    "duration_ms": 1.1439999798312783
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10523.93700007815,
+    "duration_ms": 1.3172999024391174
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10627.66780005768,
+    "duration_ms": 1.6536000184714794
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10740.949400002137,
+    "duration_ms": 0.9960000170394778
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10844.211800023913,
+    "duration_ms": 1.0587000288069248
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 10956.864000065252,
+    "duration_ms": 1.0775999398902059
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 11061.285100062378,
+    "duration_ms": 1.2746999273076653
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 11173.992900061421,
+    "duration_ms": 1.465699984692037
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 11277.52430003602,
+    "duration_ms": 0.9726999560371041
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 11390.324200037867,
+    "duration_ms": 1.0613000486046076
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 11494.33710006997,
+    "duration_ms": 1.0415000142529607
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:B___B",
+    "elapsed_ms": 11601.740700076334,
+    "duration_ms": 1.2975999852642417
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:C___C",
+    "elapsed_ms": 11703.233300009742,
+    "duration_ms": 1.2498999712988734
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:C___C",
+    "elapsed_ms": 11804.530100082047,
+    "duration_ms": 0.8821999654173851
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:C___C",
+    "elapsed_ms": 11905.475900042802,
+    "duration_ms": 1.3627000153064728
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:D___D",
+    "elapsed_ms": 12007.452700054273,
+    "duration_ms": 1.4033999759703875
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:D___D",
+    "elapsed_ms": 12109.157800092362,
+    "duration_ms": 0.8446999127045274
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:D___D",
+    "elapsed_ms": 12210.06790001411,
+    "duration_ms": 1.2704000109806657
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:D___D",
+    "elapsed_ms": 12311.371900024824,
+    "duration_ms": 1.0609000455588102
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:D___D",
+    "elapsed_ms": 12412.499000085518,
+    "duration_ms": 1.1260999599471688
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:E___E",
+    "elapsed_ms": 12513.918100041337,
+    "duration_ms": 2.6543999556452036
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:E___E",
+    "elapsed_ms": 12616.886700037867,
+    "duration_ms": 0.9460999863222241
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:E___E",
+    "elapsed_ms": 12718.161800061353,
+    "duration_ms": 0.9328000014647841
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:E___E",
+    "elapsed_ms": 12819.220600067638,
+    "duration_ms": 0.9272999595850706
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:F___F",
+    "elapsed_ms": 12920.350600033998,
+    "duration_ms": 1.1909999884665012
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:F___F",
+    "elapsed_ms": 13021.735000074841,
+    "duration_ms": 0.8238999871537089
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:F___F",
+    "elapsed_ms": 13122.931000078097,
+    "duration_ms": 1.160199986770749
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:F___F",
+    "elapsed_ms": 13224.45290000178,
+    "duration_ms": 2.29049997869879
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13341.28180006519,
+    "duration_ms": 2.068399917334318
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13457.736000069417,
+    "duration_ms": 1.0803999612107873
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13563.499400042929,
+    "duration_ms": 1.2459999416023493
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13680.13630004134,
+    "duration_ms": 1.0305000469088554
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13781.773300026543,
+    "duration_ms": 1.2453000526875257
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13887.360500055365,
+    "duration_ms": 1.322799944318831
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 13990.139000001363,
+    "duration_ms": 1.3233000645413995
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14091.709700063802,
+    "duration_ms": 1.5305000124499202
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14208.135700086132,
+    "duration_ms": 1.4767999527975917
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14319.383700028993,
+    "duration_ms": 1.2254000175744295
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14425.41100003291,
+    "duration_ms": 1.079399953596294
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14540.62760004308,
+    "duration_ms": 1.3879999751225114
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14658.717500045896,
+    "duration_ms": 1.2668999843299389
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14775.427300017327,
+    "duration_ms": 1.5235000755637884
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14892.11780007463,
+    "duration_ms": 1.3989999424666166
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 14998.374300077558,
+    "duration_ms": 1.070900005288422
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 15109.219899983145,
+    "duration_ms": 1.2287000427022576
+  },
+  {
+    "ok": true,
+    "value": 1001,
+    "phase": "urn:ojies:e08:20260921T144605.568057Z-390dacaf:ACK___ACK",
+    "elapsed_ms": 15225.22060002666,
+    "duration_ms": 1.993300043977797
+  }
+]

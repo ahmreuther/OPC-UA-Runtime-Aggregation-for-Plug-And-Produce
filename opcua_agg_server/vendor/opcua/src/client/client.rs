@@ -13,6 +13,7 @@ use super::{
     session::{
         services::*,
         session::{Session, SessionInfo},
+        SessionOperationControl,
     },
     session_retry_policy::SessionRetryPolicy,
 };
@@ -71,6 +72,7 @@ pub struct Client {
     certificate_store: Arc<RwLock<CertificateStore>>,
     /// The session retry policy for new sessions
     session_retry_policy: SessionRetryPolicy,
+    operation_control: Option<SessionOperationControl>,
 }
 
 impl Drop for Client {
@@ -162,8 +164,13 @@ impl Client {
         Client {
             config,
             session_retry_policy,
+            operation_control: None,
             certificate_store: Arc::new(RwLock::new(certificate_store)),
         }
+    }
+
+    pub(crate) fn set_operation_control(&mut self, control: Option<SessionOperationControl>) {
+        self.operation_control = control;
     }
 
     /// Returns a filled OPC UA [`ApplicationDescription`] using information from the config
@@ -386,7 +393,7 @@ impl Client {
                 session_info.endpoint.endpoint_url
             ))
         } else {
-            let session = Arc::new(RwLock::new(Session::new(
+            let mut session = Session::new(
                 self.application_description(),
                 self.config.session_name.clone(),
                 self.certificate_store.clone(),
@@ -396,8 +403,9 @@ impl Client {
                 self.config.request_timeout,
                 self.config.performance.ignore_clock_skew,
                 self.config.performance.single_threaded_executor,
-            )));
-            Ok(session)
+            );
+            session.set_operation_control(self.operation_control.clone());
+            Ok(Arc::new(RwLock::new(session)))
         }
     }
 
@@ -477,7 +485,7 @@ impl Client {
                 user_identity_token: IdentityToken::Anonymous,
                 preferred_locales,
             };
-            let session = Session::new(
+            let mut session = Session::new(
                 self.application_description(),
                 self.config.session_name.clone(),
                 self.certificate_store.clone(),
@@ -488,6 +496,7 @@ impl Client {
                 self.config.performance.ignore_clock_skew,
                 self.config.performance.single_threaded_executor,
             );
+            session.set_operation_control(self.operation_control.clone());
             session.connect()?;
             let result = session.get_endpoints()?;
             session.disconnect();

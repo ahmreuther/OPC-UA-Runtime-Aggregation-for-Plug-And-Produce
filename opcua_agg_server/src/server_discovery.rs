@@ -7,8 +7,10 @@ pub mod config;
 pub mod discovery;
 pub mod entry_point_generator;
 pub mod http_server;
+pub(crate) mod incremental_rules;
 pub mod nodeset_import;
 pub mod python_runtime;
+pub(crate) mod recovery;
 pub mod rule_generator;
 pub mod urdf_exporter;
 
